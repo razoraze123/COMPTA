@@ -19,6 +19,7 @@ from PySide6.QtGui import QIcon
 
 from MOTEUR.scraping_widget import ScrapingImagesWidget
 from MOTEUR.achat_widget import AchatWidget
+from MOTEUR.vente_widget import VenteWidget
 from MOTEUR.profile_widget import ProfileWidget
 from MOTEUR.dashboard_widget import DashboardWidget
 import sys
@@ -191,6 +192,9 @@ class MainWindow(QMainWindow):
             elif name == "Achat":
                 self.achat_btn = btn
                 btn.clicked.connect(lambda _, b=btn: self.show_achat_page(b))
+            elif name == "Ventes":
+                self.ventes_btn = btn
+                btn.clicked.connect(lambda _, b=btn: self.show_ventes_page(b))
             else:
                 btn.clicked.connect(
                     lambda _, n=name, b=btn: self.display_content(
@@ -287,6 +291,10 @@ class MainWindow(QMainWindow):
         self.achat_page = AchatWidget()
         self.stack.addWidget(self.achat_page)
 
+        # Page for ventes
+        self.ventes_page = VenteWidget()
+        self.stack.addWidget(self.ventes_page)
+
         # Settings page displayed when the bottom button is clicked
         self.settings_page = QWidget()
         settings_layout = QVBoxLayout(self.settings_page)
@@ -348,6 +356,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.achat_page)
+
+    def show_ventes_page(self, button: SidebarButton) -> None:
+        """Display the ventes page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.ventes_page)
 
     def open_from_dashboard(self, name: str) -> None:
         """Open a comptabilité page from dashboard links."""

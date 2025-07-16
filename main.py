@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QScrollArea,
 )
-from PySide6.QtCore import Qt, QPropertyAnimation
+from PySide6.QtCore import Qt, QPropertyAnimation, Slot
 from PySide6.QtGui import QIcon
 
 from MOTEUR.scraping_widget import ScrapingImagesWidget
@@ -274,9 +274,12 @@ class MainWindow(QMainWindow):
             "\ud83d\udd04 Mettre \u00e0 jour depuis GitHub"
         )
         update_button.clicked.connect(self.update_from_github)
+        refresh_button = QPushButton("\ud83d\udd04 Actualiser le profil")
+        refresh_button.clicked.connect(self.refresh_scraping)
         settings_layout.addStretch()
         settings_layout.addWidget(title_label)
         settings_layout.addWidget(update_button, alignment=Qt.AlignCenter)
+        settings_layout.addWidget(refresh_button, alignment=Qt.AlignCenter)
         settings_layout.addStretch()
         self.stack.addWidget(self.settings_page)
 
@@ -352,6 +355,17 @@ class MainWindow(QMainWindow):
         )
         subprocess.Popen([sys.executable] + sys.argv)
         QApplication.quit()
+
+    @Slot()
+    def refresh_scraping(self) -> None:
+        """Reset the image scraping page."""
+        page = self.scraping_images_page
+        page.start_btn.setEnabled(True)
+        page.console.clear()
+        page.progress_bar.setValue(0)
+        page.progress_bar.hide()
+        page.url_edit.clear()
+        page.folder_edit.clear()
 
 
 if __name__ == "__main__":

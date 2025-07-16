@@ -44,3 +44,9 @@ class ProfileManager:
         """Add or update *name* with *css* and persist it."""
         self.profiles[name] = css
         self.save_profiles()
+
+    def remove_profile(self, name: str) -> None:
+        """Delete *name* from profiles if present and persist."""
+        if name in self.profiles:
+            del self.profiles[name]
+            self.save_profiles()

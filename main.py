@@ -257,6 +257,10 @@ class MainWindow(QMainWindow):
         self.scraping_images_page = ScrapingImagesWidget()
         self.stack.addWidget(self.scraping_images_page)
 
+        self.profile_page.profile_chosen.connect(
+            self.scraping_images_page.set_selected_profile
+        )
+
         # Page for achats
         self.achat_page = AchatWidget()
         self.stack.addWidget(self.achat_page)

@@ -13,12 +13,13 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 from PySide6.QtCore import Qt, QPropertyAnimation
-from PySide6.QtGui import QFont
 import sys
 import subprocess
 
+
 class SidebarButton(QPushButton):
     """Custom button used in the vertical sidebar."""
+
     def __init__(self, text: str) -> None:
         super().__init__(text)
         # Basic style for a modern flat button
@@ -77,15 +78,22 @@ class CollapsibleSection(QWidget):
 
         self.content_area = QWidget()
         self.content_area.setMaximumHeight(0)
-        self.content_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.content_area.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Fixed
+        )
 
-        self.toggle_animation = QPropertyAnimation(self.content_area, b"maximumHeight")
+        self.toggle_animation = QPropertyAnimation(
+            self.content_area, b"maximumHeight"
+        )
         self.toggle_animation.setDuration(200)
         self.toggle_animation.setStartValue(0)
         self.toggle_animation.setEndValue(0)
 
         self.toggle_button.clicked.connect(self.toggle)
-        if self.hide_title_when_collapsed and not self.toggle_button.isChecked():
+        if (
+            self.hide_title_when_collapsed
+            and not self.toggle_button.isChecked()
+        ):
             self.toggle_button.setText("")
 
         main_layout = QVBoxLayout(self)
@@ -102,7 +110,9 @@ class CollapsibleSection(QWidget):
         checked = self.toggle_button.isChecked()
         total_height = self.content_area.sizeHint().height()
         self.toggle_animation.setDirection(
-            QPropertyAnimation.Forward if checked else QPropertyAnimation.Backward
+            QPropertyAnimation.Forward
+            if checked
+            else QPropertyAnimation.Backward
         )
         self.toggle_animation.setEndValue(total_height if checked else 0)
         self.toggle_animation.start()
@@ -112,8 +122,10 @@ class CollapsibleSection(QWidget):
     def add_widget(self, widget: QWidget) -> None:
         self.inner_layout.addWidget(widget)
 
+
 class MainWindow(QMainWindow):
     """Main application window with a sidebar and central stack."""
+
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("COMPTA - Interface de gestion comptable")
@@ -148,10 +160,18 @@ class MainWindow(QMainWindow):
         compta_section = CollapsibleSection(
             "\ud83d\udcc1 Comptabilit\u00e9", hide_title_when_collapsed=False
         )
-        for name in ["Tableau de bord", "Journal", "Grand Livre", "Bilan", "Résultat"]:
+        for name in [
+            "Tableau de bord",
+            "Journal",
+            "Grand Livre",
+            "Bilan",
+            "Résultat",
+        ]:
             btn = SidebarButton(name)
             btn.clicked.connect(
-                lambda _, n=name, b=btn: self.display_content(f"Comptabilité : {n}", b)
+                lambda _, n=name, b=btn: self.display_content(
+                    f"Comptabilité : {n}", b
+                )
             )
             compta_section.add_widget(btn)
             self.button_group.append(btn)
@@ -162,7 +182,9 @@ class MainWindow(QMainWindow):
         for name in ["Scraping Images", "Scraping Descriptions"]:
             btn = SidebarButton(name)
             btn.clicked.connect(
-                lambda _, n=name, b=btn: self.display_content(f"Scraping : {n}", b)
+                lambda _, n=name, b=btn: self.display_content(
+                    f"Scraping : {n}", b
+                )
             )
             scrap_section.add_widget(btn)
             self.button_group.append(btn)
@@ -184,14 +206,18 @@ class MainWindow(QMainWindow):
 
         # ---------------- Central area -----------------
         self.stack = QStackedWidget()
-        self.stack.addWidget(QLabel("Bienvenue sur COMPTA", alignment=Qt.AlignCenter))
+        self.stack.addWidget(
+            QLabel("Bienvenue sur COMPTA", alignment=Qt.AlignCenter)
+        )
 
         # Settings page displayed when the bottom button is clicked
         self.settings_page = QWidget()
         settings_layout = QVBoxLayout(self.settings_page)
         title_label = QLabel("Param\u00e8tres \u2013 Maintenance du projet")
         title_label.setAlignment(Qt.AlignCenter)
-        update_button = QPushButton("\ud83d\udd04 Mettre \u00e0 jour depuis GitHub")
+        update_button = QPushButton(
+            "\ud83d\udd04 Mettre \u00e0 jour depuis GitHub"
+        )
         update_button.clicked.connect(self.update_from_github)
         settings_layout.addStretch()
         settings_layout.addWidget(title_label)
@@ -211,7 +237,7 @@ class MainWindow(QMainWindow):
 
     # Slot methods ------------------------------------------------------
     def display_content(self, text: str, button: SidebarButton) -> None:
-        """Show a simple QLabel in the central stack and highlight the button."""
+        """Show a QLabel in the stack and highlight the button."""
         self.clear_selection()
         button.setChecked(True)
         label = QLabel(text, alignment=Qt.AlignCenter)
@@ -253,6 +279,7 @@ class MainWindow(QMainWindow):
         )
         subprocess.Popen([sys.executable] + sys.argv)
         QApplication.quit()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -13,17 +15,22 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 from PySide6.QtCore import Qt, QPropertyAnimation
+from PySide6.QtGui import QIcon
 
 from MOTEUR.scraping_widget import ScrapingImagesWidget
 import sys
 import subprocess
 
+BASE_DIR = Path(__file__).resolve().parent
+
 
 class SidebarButton(QPushButton):
     """Custom button used in the vertical sidebar."""
 
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, icon_path: str | None = None) -> None:
         super().__init__(text)
+        if icon_path:
+            self.setIcon(QIcon(icon_path))
         # Basic style for a modern flat button
         self.setStyleSheet(
             """
@@ -162,14 +169,15 @@ class MainWindow(QMainWindow):
         compta_section = CollapsibleSection(
             "\ud83d\udcc1 Comptabilit\u00e9", hide_title_when_collapsed=False
         )
-        for name in [
-            "Tableau de bord",
-            "Journal",
-            "Grand Livre",
-            "Bilan",
-            "Résultat",
-        ]:
-            btn = SidebarButton(name)
+        compta_icons = {
+            "Tableau de bord": BASE_DIR / "icons" / "dashboard.svg",
+            "Journal": BASE_DIR / "icons" / "journal.svg",
+            "Grand Livre": BASE_DIR / "icons" / "grand_livre.svg",
+            "Bilan": BASE_DIR / "icons" / "bilan.svg",
+            "Résultat": BASE_DIR / "icons" / "resultat.svg",
+        }
+        for name in compta_icons:
+            btn = SidebarButton(name, icon_path=str(compta_icons[name]))
             btn.clicked.connect(
                 lambda _, n=name, b=btn: self.display_content(
                     f"Comptabilité : {n}", b
@@ -181,14 +189,18 @@ class MainWindow(QMainWindow):
 
         # Scraping section
         scrap_section = CollapsibleSection("\ud83d\udee0 Scraping")
-        self.scrap_img_btn = SidebarButton("Scraping Images")
+        self.scrap_img_btn = SidebarButton(
+            "Scraping Images", icon_path=str(BASE_DIR / "icons" / "scraping.svg")
+        )
         self.scrap_img_btn.clicked.connect(
             lambda _, b=self.scrap_img_btn: self.show_scraping_images(b)
         )
         scrap_section.add_widget(self.scrap_img_btn)
         self.button_group.append(self.scrap_img_btn)
 
-        btn = SidebarButton("Scraping Descriptions")
+        btn = SidebarButton(
+            "Scraping Descriptions", icon_path=str(BASE_DIR / "icons" / "text.svg")
+        )
         btn.clicked.connect(
             lambda _, b=btn: self.display_content("Scraping : Descriptions", b)
         )
@@ -205,7 +217,10 @@ class MainWindow(QMainWindow):
         line.setStyleSheet("margin:5px 0;")
         sidebar_layout.addWidget(line)
 
-        self.settings_btn = SidebarButton("\u2699\ufe0f Param\u00e8tres")
+        self.settings_btn = SidebarButton(
+            "\u2699\ufe0f Param\u00e8tres",
+            icon_path=str(BASE_DIR / "icons" / "settings.svg"),
+        )
         self.settings_btn.clicked.connect(self.show_settings)
         sidebar_layout.addWidget(self.settings_btn)
         self.button_group.append(self.settings_btn)

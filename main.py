@@ -175,6 +175,8 @@ class MainWindow(QMainWindow):
             "Grand Livre": BASE_DIR / "icons" / "grand_livre.svg",
             "Bilan": BASE_DIR / "icons" / "bilan.svg",
             "Résultat": BASE_DIR / "icons" / "resultat.svg",
+            "Achat": BASE_DIR / "icons" / "achat.svg",
+            "Ventes": BASE_DIR / "icons" / "ventes.svg",
         }
         for name in compta_icons:
             btn = SidebarButton(name, icon_path=str(compta_icons[name]))

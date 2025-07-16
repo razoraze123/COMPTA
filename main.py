@@ -20,6 +20,7 @@ from PySide6.QtGui import QIcon
 from MOTEUR.scraping_widget import ScrapingImagesWidget
 from MOTEUR.achat_widget import AchatWidget
 from MOTEUR.profile_widget import ProfileWidget
+from MOTEUR.dashboard_widget import DashboardWidget
 import sys
 import subprocess
 
@@ -182,7 +183,10 @@ class MainWindow(QMainWindow):
         }
         for name in compta_icons:
             btn = SidebarButton(name, icon_path=str(compta_icons[name]))
-            if name == "Achat":
+            if name == "Tableau de bord":
+                self.dashboard_btn = btn
+                btn.clicked.connect(lambda _, b=btn: self.show_dashboard_page(b))
+            elif name == "Achat":
                 self.achat_btn = btn
                 btn.clicked.connect(lambda _, b=btn: self.show_achat_page(b))
             else:
@@ -264,6 +268,10 @@ class MainWindow(QMainWindow):
             self.scraping_images_page.set_selected_profile
         )
 
+        # Dashboard page showing purchase statistics
+        self.dashboard_page = DashboardWidget()
+        self.stack.addWidget(self.dashboard_page)
+
         # Page for achats
         self.achat_page = AchatWidget()
         self.stack.addWidget(self.achat_page)
@@ -316,6 +324,13 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.profile_page)
+
+    def show_dashboard_page(self, button: SidebarButton) -> None:
+        """Display the dashboard page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.dashboard_page.refresh()
+        self.stack.setCurrentWidget(self.dashboard_page)
 
     def show_achat_page(self, button: SidebarButton) -> None:
         """Display the achat page."""

@@ -73,8 +73,13 @@ Interface configuration (chemins, utilisateurs, préférences)
 
 ## 🧪 Lancer les tests
 
-Après avoir installé les dépendances du projet, les tests unitaires peuvent être
-exécutés avec **pytest**. Depuis la racine du dépôt :
+Après avoir installé les dépendances du projet avec :
+
+```bash
+pip install -r requirements.txt
+```
+
+les tests unitaires peuvent ensuite être exécutés avec **pytest** depuis la racine du dépôt :
 
 ```bash
 PYTHONPATH=. pytest

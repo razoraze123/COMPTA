@@ -11,12 +11,15 @@ from PySide6.QtWidgets import (
     QPushButton,
     QMessageBox,
 )
+from PySide6.QtCore import Signal
 
 from MOTEUR.scraping.profile_manager import ProfileManager, Profile
 
 
 class ProfileWidget(QWidget):
     """Widget to manage scraping profiles."""
+
+    profile_chosen = Signal(str)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -55,6 +58,10 @@ class ProfileWidget(QWidget):
         self.del_btn = QPushButton("Supprimer")
         self.del_btn.clicked.connect(self.delete_profile)
         btn_layout.addWidget(self.del_btn)
+
+        self.use_btn = QPushButton("Utiliser")
+        self.use_btn.clicked.connect(self.use_profile)
+        btn_layout.addWidget(self.use_btn)
 
         main_layout.addLayout(btn_layout)
 
@@ -111,4 +118,10 @@ class ProfileWidget(QWidget):
         self.css_edit.clear()
         if self.profile_list.count():
             self.profile_list.setCurrentRow(0)
+
+    def use_profile(self) -> None:
+        """Emit the currently selected profile name."""
+        name = self.name_edit.text().strip()
+        if name:
+            self.profile_chosen.emit(name)
 

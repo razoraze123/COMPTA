@@ -166,6 +166,13 @@ class ScrapingImagesWidget(QWidget):
         if folder:
             self.folder_edit.setText(folder)
 
+    @Slot(str)
+    def set_selected_profile(self, name: str) -> None:
+        """Update the combo box to *name* if present."""
+        index = self.profile_combo.findText(name)
+        if index >= 0:
+            self.profile_combo.setCurrentIndex(index)
+
     @Slot()
     def start_scraping(self) -> None:
         """Launch the scraping process in a background thread."""

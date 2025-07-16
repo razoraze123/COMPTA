@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from scraping.image_scraper import download_images
-from scraping.constants import IMAGES_DEFAULT_SELECTOR
+from MOTEUR.scraping.image_scraper import download_images
+from MOTEUR.scraping.constants import IMAGES_DEFAULT_SELECTOR
 
 
 class ScrapingImagesWidget(QWidget):

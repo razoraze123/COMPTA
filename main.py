@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QPropertyAnimation
 
-from scraping_widget import ScrapingImagesWidget
+from MOTEUR.scraping_widget import ScrapingImagesWidget
 import sys
 import subprocess
 

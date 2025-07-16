@@ -10,7 +10,9 @@ def test_default_profile_creation(tmp_path: Path) -> None:
     manager = ProfileManager(json_path)
 
     assert json_path.exists()
-    assert manager.get_profile("default") == IMAGES_DEFAULT_SELECTOR
+    profile = manager.get_profile("default")
+    assert profile is not None
+    assert profile.css_selector == IMAGES_DEFAULT_SELECTOR
 
     with json_path.open() as fh:
         data = json.load(fh)
@@ -24,5 +26,7 @@ def test_add_and_load_profile(tmp_path: Path) -> None:
 
     # Reload from disk
     new_manager = ProfileManager(json_path)
-    assert new_manager.get_profile("amazon") == "img.s-image"
+    profile = new_manager.get_profile("amazon")
+    assert profile is not None
+    assert profile.css_selector == "img.s-image"
     assert "amazon" in new_manager.profiles

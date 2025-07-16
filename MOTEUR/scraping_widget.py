@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from pathlib import Path
+
+import logging
+
+from PySide6.QtCore import Qt, Slot, QObject, Signal, QThread, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -13,12 +18,59 @@ from PySide6.QtWidgets import (
     QFileDialog,
 )
 
+from MOTEUR.scraping.image_scraper import download_images
+from MOTEUR.scraping.constants import IMAGES_DEFAULT_SELECTOR
+
+
+class LogHandler(logging.Handler, QObject):
+    """Forward log records to a Qt signal."""
+
+    log_signal = Signal(str)
+
+    def __init__(self) -> None:
+        logging.Handler.__init__(self)
+        QObject.__init__(self)
+
+    def emit(self, record: logging.LogRecord) -> None:  # noqa: D401 - override
+        self.log_signal.emit(self.format(record))
+
+
+class ScrapeWorker(QThread):
+    """Thread to run the image scraping."""
+
+    progress = Signal(int, int)
+    finished = Signal(dict)
+
+    def __init__(self, url: str, css: str, folder: str) -> None:
+        super().__init__()
+        self.url = url
+        self.css = css or IMAGES_DEFAULT_SELECTOR
+        self.folder = folder
+
+    def run(self) -> None:  # noqa: D401 - QThread API
+        result = download_images(
+            self.url,
+            css_selector=self.css,
+            parent_dir=self.folder,
+            progress_callback=lambda c, t: self.progress.emit(c, t),
+        )
+        self.finished.emit(result)
+
 
 class ScrapingImagesWidget(QWidget):
     """Widget visuel pour lancer un scraping d'images."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+
+        self.log_handler = LogHandler()
+        self.log_handler.setFormatter(logging.Formatter("%(message)s"))
+        root_logger = logging.getLogger()
+        root_logger.addHandler(self.log_handler)
+        root_logger.setLevel(logging.INFO)
+
+        self.worker: ScrapeWorker | None = None
+        self.scrape_folder: Path | None = None
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -85,6 +137,7 @@ class ScrapingImagesWidget(QWidget):
             }
             """
         )
+        self.start_btn.clicked.connect(self.start_scraping)
         button_layout.addWidget(self.start_btn)
         button_layout.addStretch()
 
@@ -96,6 +149,7 @@ class ScrapingImagesWidget(QWidget):
         self.console.setStyleSheet(
             "background-color: #212121; color: #00FF00; border-radius: 6px;"
         )
+        self.log_handler.log_signal.connect(self.console.append)
         main_layout.addWidget(self.console)
 
     # ------------------------------------------------------------------
@@ -103,4 +157,37 @@ class ScrapingImagesWidget(QWidget):
         folder = QFileDialog.getExistingDirectory(self, "Choisir un dossier")
         if folder:
             self.folder_edit.setText(folder)
+
+    @Slot()
+    def start_scraping(self) -> None:
+        """Launch the scraping process in a background thread."""
+        url = self.url_edit.text().strip()
+        if not url:
+            self.console.append("⚠️ URL manquante")
+            return
+
+        css = self.css_edit.text().strip() or IMAGES_DEFAULT_SELECTOR
+        folder = self.folder_edit.text().strip() or "images"
+
+        self.console.clear()
+        self.start_btn.setEnabled(False)
+
+        self.worker = ScrapeWorker(url, css, folder)
+        self.worker.progress.connect(self.update_progress)
+        self.worker.finished.connect(self.scraping_finished)
+        self.worker.start()
+
+    @Slot(int, int)
+    def update_progress(self, current: int, total: int) -> None:
+        if total:
+            pct = int(current / total * 100)
+            self.console.append(f"Progression: {pct}%")
+
+    @Slot(dict)
+    def scraping_finished(self, result: dict) -> None:
+        self.scrape_folder = Path(result.get("folder", ""))
+        self.console.append("✅ Terminé")
+        if self.scrape_folder and self.scrape_folder.exists():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.scrape_folder)))
+        self.start_btn.setEnabled(True)
 

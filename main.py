@@ -47,8 +47,16 @@ class SidebarButton(QPushButton):
 class CollapsibleSection(QWidget):
     """Section with a header button that can show or hide its content."""
 
-    def __init__(self, title: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        title: str,
+        parent: QWidget | None = None,
+        *,
+        hide_title_when_collapsed: bool = False,
+    ) -> None:
         super().__init__(parent)
+        self.original_title = title
+        self.hide_title_when_collapsed = hide_title_when_collapsed
         self.toggle_button = QPushButton(title)
         self.toggle_button.setCheckable(True)
         self.toggle_button.setChecked(False)
@@ -77,6 +85,8 @@ class CollapsibleSection(QWidget):
         self.toggle_animation.setEndValue(0)
 
         self.toggle_button.clicked.connect(self.toggle)
+        if self.hide_title_when_collapsed and not self.toggle_button.isChecked():
+            self.toggle_button.setText("")
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -96,6 +106,8 @@ class CollapsibleSection(QWidget):
         )
         self.toggle_animation.setEndValue(total_height if checked else 0)
         self.toggle_animation.start()
+        if self.hide_title_when_collapsed:
+            self.toggle_button.setText(self.original_title if checked else "")
 
     def add_widget(self, widget: QWidget) -> None:
         self.inner_layout.addWidget(widget)
@@ -136,7 +148,9 @@ class MainWindow(QMainWindow):
         self.button_group: list[SidebarButton] = []
 
         # Comptabilité section
-        compta_section = CollapsibleSection("\ud83d\udcc1 Comptabilit\u00e9")
+        compta_section = CollapsibleSection(
+            "\ud83d\udcc1 Comptabilit\u00e9", hide_title_when_collapsed=True
+        )
         for name in ["Tableau de bord", "Journal", "Grand Livre", "Bilan", "Résultat"]:
             btn = SidebarButton(name)
             btn.clicked.connect(
@@ -214,21 +228,34 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(self.settings_page)
 
     def update_from_github(self) -> None:
-        """Run a git pull and show a message box with the result."""
+        """Run a git pull, display logs and restart if needed."""
         result = subprocess.run(
             ["git", "pull", "origin", "main"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
-        if result.returncode == 0:
-            QMessageBox.information(self, "Mise à jour", "✅ Mise à jour réussie")
-        else:
+
+        if result.returncode != 0:
             QMessageBox.critical(
                 self,
                 "Mise à jour",
                 f"❌ Échec de mise à jour\n{result.stderr}",
             )
+            return
+
+        logs = result.stdout.strip()
+        if "Already up to date" in logs or "Already up-to-date" in logs:
+            QMessageBox.information(self, "Mise à jour", logs)
+            return
+
+        QMessageBox.information(
+            self,
+            "Mise à jour",
+            f"✅ Mise à jour appliquée:\n{logs}\n\nL'application va redémarrer",
+        )
+        subprocess.Popen([sys.executable] + sys.argv)
+        QApplication.quit()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -19,6 +19,7 @@ from PySide6.QtGui import QIcon
 
 from MOTEUR.scraping_widget import ScrapingImagesWidget
 from MOTEUR.achat_widget import AchatWidget
+from MOTEUR.profile_widget import ProfileWidget
 import sys
 import subprocess
 
@@ -196,6 +197,16 @@ class MainWindow(QMainWindow):
 
         # Scraping section
         scrap_section = CollapsibleSection("\ud83d\udee0 Scraping")
+
+        self.profiles_btn = SidebarButton(
+            "Profil Scraping", icon_path=str(BASE_DIR / "icons" / "profile.svg")
+        )
+        self.profiles_btn.clicked.connect(
+            lambda _, b=self.profiles_btn: self.show_profiles(b)
+        )
+        scrap_section.add_widget(self.profiles_btn)
+        self.button_group.append(self.profiles_btn)
+
         self.scrap_img_btn = SidebarButton(
             "Scraping Images", icon_path=str(BASE_DIR / "icons" / "scraping.svg")
         )
@@ -237,6 +248,10 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(
             QLabel("Bienvenue sur COMPTA", alignment=Qt.AlignCenter)
         )
+
+        # Page for scraping profiles
+        self.profile_page = ProfileWidget()
+        self.stack.addWidget(self.profile_page)
 
         # Page for scraping images
         self.scraping_images_page = ScrapingImagesWidget()
@@ -285,6 +300,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.scraping_images_page)
+
+    def show_profiles(self, button: SidebarButton) -> None:
+        """Display the profile management page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.profile_page)
 
     def show_achat_page(self, button: SidebarButton) -> None:
         """Display the achat page."""

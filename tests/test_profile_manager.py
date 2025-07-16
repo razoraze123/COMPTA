@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 from MOTEUR.scraping.profile_manager import ProfileManager
@@ -62,3 +63,40 @@ def test_profile_css_used_in_scraper(monkeypatch, tmp_path: Path) -> None:
     worker = ScrapeWorker("http://example.com", profile.css_selector, "images")
     worker.run()
     assert calls['css'] == "div.img"
+
+
+def test_download_images_timeout_handled(monkeypatch, caplog) -> None:
+    from selenium.common.exceptions import TimeoutException
+    from MOTEUR.scraping import image_scraper
+
+    class DummyDriver:
+        def execute_cdp_cmd(self, *a, **k):
+            pass
+
+        def get(self, url):
+            self.url = url
+
+        def quit(self):
+            pass
+
+    monkeypatch.setattr(image_scraper, "setup_driver", lambda: DummyDriver())
+
+    class DummyWait:
+        def __init__(self, driver, timeout):
+            pass
+
+        def until(self, method):
+            raise TimeoutException("boom")
+
+    monkeypatch.setattr(image_scraper, "WebDriverWait", DummyWait)
+
+    caplog.set_level(logging.ERROR)
+    result = image_scraper.download_images(
+        "http://example.com", css_selector="img.css"
+    )
+
+    assert result == {"folder": Path(), "first_image": None}
+    assert any(
+        "Timeout waiting for elements with selector img.css" in rec.message
+        for rec in caplog.records
+    )

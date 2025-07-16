@@ -15,6 +15,7 @@ from typing import Callable, Optional
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from tqdm import tqdm
 
 from .driver_utils import setup_driver
@@ -99,9 +100,15 @@ def download_images(
     try:
         logger.info("\U0001F30D Chargement de la page...")
         driver.get(url)
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, css_selector))
-        )
+        try:
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, css_selector))
+            )
+        except TimeoutException:
+            logger.error(
+                "Timeout waiting for elements with selector %s", css_selector
+            )
+            return {"folder": folder, "first_image": first_image}
 
         product_name = _find_product_name(driver)
         folder = _safe_folder(product_name, parent_dir)

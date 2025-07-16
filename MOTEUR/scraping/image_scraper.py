@@ -88,7 +88,7 @@ def download_images(
     """Download all images from *url* and return folder and first image."""
     reserved_paths: set[Path] = set()
 
-    driver = setup_driver()
+    driver = setup_driver(window_size=(1920, 1080), timeout=None)
     driver.execute_cdp_cmd(
         "Network.setUserAgentOverride",
         {"userAgent": user_agent},

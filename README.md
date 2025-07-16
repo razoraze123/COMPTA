@@ -65,11 +65,21 @@ Modules prévus (roadmap)
 
  Système de sauvegarde et export CSV/Excel/PDF
 
- Module de scraping (images, descriptions, variantes…)
+Module de scraping (images, descriptions, variantes…)
 
- Tableau de bord avec indicateurs personnalisés
+Tableau de bord avec indicateurs personnalisés
 
- Interface configuration (chemins, utilisateurs, préférences)
+Interface configuration (chemins, utilisateurs, préférences)
+
+## 🧪 Lancer les tests
+
+Après avoir installé les dépendances du projet, les tests unitaires peuvent être
+exécutés avec **pytest**. Depuis la racine du dépôt :
+
+```bash
+PYTHONPATH=. pytest
+```
+
 🔧 Contribution
 Ce projet est en développement actif. Toute idée, retour ou contribution est bienvenue.
 

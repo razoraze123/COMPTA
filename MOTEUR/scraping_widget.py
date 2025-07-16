@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTextEdit,
     QFileDialog,
+    QProgressBar,
 )
 
 from MOTEUR.scraping.image_scraper import download_images
@@ -118,6 +119,13 @@ class ScrapingImagesWidget(QWidget):
         fields_layout.addWidget(folder_container)
         main_layout.addLayout(fields_layout)
 
+        # Progress bar --------------------------------------------------
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.hide()
+        main_layout.addWidget(self.progress_bar)
+
         # Launch button --------------------------------------------------
         button_layout = QHBoxLayout()
         button_layout.addStretch()
@@ -170,6 +178,8 @@ class ScrapingImagesWidget(QWidget):
         folder = self.folder_edit.text().strip() or "images"
 
         self.console.clear()
+        self.progress_bar.setValue(0)
+        self.progress_bar.show()
         self.start_btn.setEnabled(False)
 
         self.worker = ScrapeWorker(url, css, folder)
@@ -182,6 +192,7 @@ class ScrapingImagesWidget(QWidget):
         if total:
             pct = int(current / total * 100)
             self.console.append(f"Progression: {pct}%")
+            self.progress_bar.setValue(pct)
 
     @Slot(dict)
     def scraping_finished(self, result: dict) -> None:

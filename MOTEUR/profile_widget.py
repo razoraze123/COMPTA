@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from MOTEUR.scraping.profile_manager import ProfileManager
+from MOTEUR.scraping.profile_manager import ProfileManager, Profile
 
 
 class ProfileWidget(QWidget):
@@ -63,7 +63,8 @@ class ProfileWidget(QWidget):
         if current:
             name = current.text()
             self.name_edit.setText(name)
-            css = self.manager.get_profile(name) or ""
+            profile = self.manager.get_profile(name)
+            css = profile.css_selector if profile else ""
             self.css_edit.setText(css)
 
     def add_profile(self) -> None:

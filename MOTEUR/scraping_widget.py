@@ -17,10 +17,12 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QFileDialog,
     QProgressBar,
+    QComboBox,
 )
 
 from MOTEUR.scraping.image_scraper import download_images
 from MOTEUR.scraping.constants import IMAGES_DEFAULT_SELECTOR
+from MOTEUR.scraping.profile_manager import ProfileManager
 
 
 class LogHandler(logging.Handler, QObject):
@@ -72,6 +74,7 @@ class ScrapingImagesWidget(QWidget):
 
         self.worker: ScrapeWorker | None = None
         self.scrape_folder: Path | None = None
+        self.profile_manager = ProfileManager()
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -85,16 +88,13 @@ class ScrapingImagesWidget(QWidget):
         )
         main_layout.addWidget(self.url_edit)
 
-        # CSS class and destination folder ------------------------------
+        # Profile selector and destination folder -----------------------
         fields_layout = QHBoxLayout()
         fields_layout.setSpacing(10)
 
-        self.css_edit = QLineEdit()
-        self.css_edit.setPlaceholderText("\u0023\ufe0f Classe CSS")
-        self.css_edit.setStyleSheet(
-            "padding: 8px; border-radius: 6px;"
-        )
-        fields_layout.addWidget(self.css_edit)
+        self.profile_combo = QComboBox()
+        self.profile_combo.addItems(sorted(self.profile_manager.profiles))
+        fields_layout.addWidget(self.profile_combo)
 
         folder_container = QWidget()
         folder_layout = QHBoxLayout(folder_container)
@@ -174,10 +174,13 @@ class ScrapingImagesWidget(QWidget):
             self.console.append("⚠️ URL manquante")
             return
 
-        css = self.css_edit.text().strip() or IMAGES_DEFAULT_SELECTOR
+        profile_name = self.profile_combo.currentText()
+        profile = self.profile_manager.get_profile(profile_name)
+        css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
         folder = self.folder_edit.text().strip() or "images"
 
         self.console.clear()
+        self.console.append(f"Profil: {profile_name} - Sélecteur: {css}")
         self.progress_bar.setValue(0)
         self.progress_bar.show()
         self.start_btn.setEnabled(False)

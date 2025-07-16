@@ -71,6 +71,22 @@ Tableau de bord avec indicateurs personnalisés
 
 Interface configuration (chemins, utilisateurs, préférences)
 
+## Configuration du driver Selenium
+
+La fonction `setup_driver` utilisée par le module de scraping accepte
+désormais deux paramètres optionnels :
+
+- `window_size` : tuple `(largeur, hauteur)` pour définir la taille de la
+  fenêtre Chrome (par défaut `1920, 1080`).
+- `timeout` : durée maximale de chargement des pages en secondes.
+  Laisser `None` pour reproduire le comportement actuel sans limite.
+
+```python
+from MOTEUR.scraping.driver_utils import setup_driver
+
+driver = setup_driver(window_size=(1280, 720), timeout=30)
+```
+
 ## 🧪 Lancer les tests
 
 Après avoir installé les dépendances du projet avec :

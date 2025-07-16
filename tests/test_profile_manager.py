@@ -82,7 +82,11 @@ def test_download_images_timeout_handled(monkeypatch, caplog) -> None:
         def quit(self):
             pass
 
-    monkeypatch.setattr(image_scraper, "setup_driver", lambda: DummyDriver())
+    monkeypatch.setattr(
+        image_scraper,
+        "setup_driver",
+        lambda *a, **k: DummyDriver(),
+    )
 
     class DummyWait:
         def __init__(self, driver, timeout):

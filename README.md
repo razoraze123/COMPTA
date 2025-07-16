@@ -101,6 +101,32 @@ les tests unitaires peuvent ensuite être exécutés avec **pytest** depuis la r
 PYTHONPATH=. pytest
 ```
 
+## 📤 Export FEC et TVA
+
+Un script de migration minimal est fourni. Avant la première exécution :
+
+```bash
+python migrations.py
+```
+
+Pour charger quelques données de démonstration :
+
+```bash
+python sample_data.py
+```
+
+Le fichier des écritures comptables peut ensuite être généré pour une année :
+
+```bash
+python - <<'PY'
+from pathlib import Path
+from MOTEUR.accounting_db import export_fec
+export_fec('demo.db', 2024, Path('fec.csv'))
+PY
+```
+
+La fonction `get_vat_summary` de `achat_db` permet d'obtenir le récapitulatif de TVA par taux pour l'établissement de la CA3.
+
 🔧 Contribution
 Ce projet est en développement actif. Toute idée, retour ou contribution est bienvenue.
 

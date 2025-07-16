@@ -1,63 +1,272 @@
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
+
+from .db import connect
+from .models import EntryLine, Purchase, PurchaseFilter, VatLine
+from .accounting_db import _create_entry, init_db as init_accounting
+
+SQL_CREATE_SUPPLIERS = """
+CREATE TABLE IF NOT EXISTS suppliers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    vat_number TEXT,
+    address TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)"""
+
+SQL_CREATE_PURCHASES = """
+CREATE TABLE IF NOT EXISTS purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    invoice_number TEXT NOT NULL,
+    supplier_id INTEGER NOT NULL REFERENCES suppliers(id),
+    label TEXT NOT NULL,
+    ht_amount REAL NOT NULL CHECK(ht_amount >= 0),
+    vat_amount REAL NOT NULL CHECK(vat_amount >= 0),
+    vat_rate REAL NOT NULL CHECK(vat_rate IN (0,2.1,5.5,10,20)),
+    account_code TEXT NOT NULL,
+    due_date TEXT NOT NULL,
+    payment_status TEXT NOT NULL CHECK(payment_status IN ('A_PAYER','PAYE','PARTIEL')),
+    payment_date TEXT,
+    payment_method TEXT,
+    is_advance INTEGER DEFAULT 0 CHECK(is_advance IN (0,1)),
+    is_invoice_received INTEGER DEFAULT 1 CHECK(is_invoice_received IN (0,1)),
+    attachment_path TEXT,
+    created_by TEXT,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+)"""
+
+SQL_INSERT_PURCHASE = (
+    """
+    INSERT INTO purchases (
+        date, invoice_number, supplier_id, label, ht_amount, vat_amount,
+        vat_rate, account_code, due_date, payment_status, payment_date,
+        payment_method, is_advance, is_invoice_received, attachment_path,
+        created_by
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """
+)
+
+SQL_UPDATE_PURCHASE = (
+    """
+    UPDATE purchases SET
+        date=?, invoice_number=?, supplier_id=?, label=?, ht_amount=?,
+        vat_amount=?, vat_rate=?, account_code=?, due_date=?,
+        payment_status=?, payment_date=?, payment_method=?, is_advance=?,
+        is_invoice_received=?, attachment_path=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+    """
+)
+
+SQL_VAT_SUMMARY = (
+    "SELECT vat_rate, SUM(ht_amount) as base, SUM(vat_amount) as vat"
+    " FROM purchases WHERE date BETWEEN ? AND ? GROUP BY vat_rate"
+)
 
 
-def init_db(db_path: Path) -> None:
-    """Create the purchases table if it does not already exist."""
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS purchases (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                label TEXT NOT NULL,
-                amount REAL NOT NULL
-            )
-            """
-        )
+def init_db(db_path: Path | str) -> None:
+    """Create purchase related tables."""
+    init_accounting(db_path)
+    with connect(db_path) as conn:
+        conn.execute(SQL_CREATE_SUPPLIERS)
+        conn.execute(SQL_CREATE_PURCHASES)
         conn.commit()
 
 
-def add_purchase(db_path: Path, date: str, label: str, amount: float) -> int:
-    """Add a purchase row and return its new id."""
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.execute(
-            "INSERT INTO purchases (date, label, amount) VALUES (?, ?, ?)",
-            (date, label, amount),
-        )
-        conn.commit()
-        return cursor.lastrowid
-
-
-def update_purchase(
-    db_path: Path, purchase_id: int, date: str, label: str, amount: float
-) -> None:
-    """Update a purchase row identified by *purchase_id*."""
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
+def add_purchase(db_path: Path | str, pur: Purchase) -> int:
+    """Insert *pur* and generate accounting entry."""
+    vat = round(pur.ht_amount * pur.vat_rate / 100, 2)
+    pur.vat_amount = vat
+    with connect(db_path) as conn:
+        cur = conn.execute(
+            SQL_INSERT_PURCHASE,
             (
-                "UPDATE purchases SET date = ?, label = ?, amount = ? "
-                "WHERE id = ?"
+                pur.date,
+                pur.invoice_number,
+                pur.supplier_id,
+                pur.label,
+                pur.ht_amount,
+                pur.vat_amount,
+                pur.vat_rate,
+                pur.account_code,
+                pur.due_date,
+                pur.payment_status,
+                pur.payment_date,
+                pur.payment_method,
+                pur.is_advance,
+                pur.is_invoice_received,
+                pur.attachment_path,
+                pur.created_by,
             ),
-            (date, label, amount, purchase_id),
+        )
+        pur.id = cur.lastrowid
+        credit_account = (
+            "4091"
+            if pur.is_advance
+            else ("408" if not pur.is_invoice_received else "401")
+        )
+        vat_account = "44562" if pur.account_code.startswith("2") else "44566"
+        lines = [
+            EntryLine(account=pur.account_code, debit=pur.ht_amount, credit=0.0),
+            EntryLine(account=vat_account, debit=pur.vat_amount, credit=0.0),
+            EntryLine(
+                account=credit_account,
+                debit=0.0,
+                credit=pur.ht_amount + pur.vat_amount,
+            ),
+        ]
+        _create_entry(
+            conn,
+            "ACH",
+            pur.date,
+            pur.invoice_number,
+            pur.label,
+            lines,
+        )
+        conn.commit()
+        return pur.id
+
+
+def update_purchase(db_path: Path | str, pur: Purchase) -> None:
+    """Update *pur* and recreate its accounting entry."""
+    if pur.id is None:
+        raise ValueError("Purchase id required")
+    vat = round(pur.ht_amount * pur.vat_rate / 100, 2)
+    pur.vat_amount = vat
+    with connect(db_path) as conn:
+        conn.execute(SQL_UPDATE_PURCHASE, (
+            pur.date,
+            pur.invoice_number,
+            pur.supplier_id,
+            pur.label,
+            pur.ht_amount,
+            pur.vat_amount,
+            pur.vat_rate,
+            pur.account_code,
+            pur.due_date,
+            pur.payment_status,
+            pur.payment_date,
+            pur.payment_method,
+            pur.is_advance,
+            pur.is_invoice_received,
+            pur.attachment_path,
+            pur.id,
+        ))
+        # delete previous entry
+        cur = conn.execute(
+            "SELECT id FROM entries WHERE journal='ACH' AND ref=?",
+            (pur.invoice_number,),
+        )
+        row = cur.fetchone()
+        if row:
+            entry_id = row[0]
+            conn.execute("DELETE FROM entry_lines WHERE entry_id=?", (entry_id,))
+            conn.execute("DELETE FROM entries WHERE id=?", (entry_id,))
+        credit_account = (
+            "4091"
+            if pur.is_advance
+            else ("408" if not pur.is_invoice_received else "401")
+        )
+        vat_account = "44562" if pur.account_code.startswith("2") else "44566"
+        lines = [
+            EntryLine(account=pur.account_code, debit=pur.ht_amount, credit=0.0),
+            EntryLine(account=vat_account, debit=pur.vat_amount, credit=0.0),
+            EntryLine(
+                account=credit_account,
+                debit=0.0,
+                credit=pur.ht_amount + pur.vat_amount,
+            ),
+        ]
+        _create_entry(
+            conn,
+            "ACH",
+            pur.date,
+            pur.invoice_number,
+            pur.label,
+            lines,
         )
         conn.commit()
 
 
-def delete_purchase(db_path: Path, purchase_id: int) -> None:
-    """Delete the purchase row identified by *purchase_id*."""
-    with sqlite3.connect(db_path) as conn:
-        conn.execute("DELETE FROM purchases WHERE id = ?", (purchase_id,))
+def pay_purchase(
+    db_path: Path | str,
+    purchase_id: int,
+    payment_date: str,
+    method: str,
+    amount: float,
+) -> None:
+    """Register a payment entry for the purchase."""
+    with connect(db_path) as conn:
+        cur = conn.execute(
+            "SELECT ht_amount, vat_amount, invoice_number, payment_status FROM purchases WHERE id=?",
+            (purchase_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise ValueError("Invalid purchase id")
+        total = row[0] + row[1]
+        status = "PAYE" if amount >= total else "PARTIEL"
+        conn.execute(
+            "UPDATE purchases SET payment_status=?, payment_date=?, payment_method=? WHERE id=?",
+            (
+                status,
+                payment_date,
+                method,
+                purchase_id,
+            ),
+        )
+        lines = [
+            EntryLine(account="401", debit=amount, credit=0.0),
+            EntryLine(account="512", debit=0.0, credit=amount),
+        ]
+        _create_entry(
+            conn,
+            "BQ",
+            payment_date,
+            row[2],
+            f"Paiement facture {row[2]}",
+            lines,
+        )
         conn.commit()
 
 
-def fetch_all_purchases(db_path: Path) -> List[Tuple[int, str, str, float]]:
-    """Return all purchase rows."""
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.execute(
-            "SELECT id, date, label, amount FROM purchases ORDER BY date"
+def fetch_purchases(db_path: Path | str, flt: PurchaseFilter) -> List[Purchase]:
+    """Return purchases filtered according to *flt*."""
+    query = "SELECT * FROM purchases WHERE 1=1"
+    params: List = []
+    if flt.start:
+        query += " AND date >= ?"
+        params.append(flt.start)
+    if flt.end:
+        query += " AND date <= ?"
+        params.append(flt.end)
+    if flt.supplier_id:
+        query += " AND supplier_id = ?"
+        params.append(flt.supplier_id)
+    if flt.status:
+        query += " AND payment_status = ?"
+        params.append(flt.status)
+    query += " ORDER BY date"
+    with connect(db_path) as conn:
+        cur = conn.execute(query, params)
+        rows = cur.fetchall()
+        return [Purchase(**dict(row)) for row in rows]
+
+
+def fetch_all_purchases(db_path: Path | str):
+    """Return purchases as (id, date, label, ttc)."""
+    with connect(db_path) as conn:
+        cur = conn.execute(
+            "SELECT id, date, label, ht_amount + vat_amount as ttc FROM purchases ORDER BY date"
         )
-        return cursor.fetchall()
+        return [(r["id"], r["date"], r["label"], r["ttc"]) for r in cur.fetchall()]
+
+
+def get_vat_summary(db_path: Path | str, start: str, end: str) -> List[VatLine]:
+    """Return VAT summary per rate between *start* and *end*."""
+    with connect(db_path) as conn:
+        cur = conn.execute(SQL_VAT_SUMMARY, (start, end))
+        return [VatLine(rate=r[0], base=r[1], vat=r[2]) for r in cur.fetchall()]
+

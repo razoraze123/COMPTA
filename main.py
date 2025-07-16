@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 from PySide6.QtCore import Qt, QPropertyAnimation
+
+from scraping_widget import ScrapingImagesWidget
 import sys
 import subprocess
 
@@ -179,15 +181,19 @@ class MainWindow(QMainWindow):
 
         # Scraping section
         scrap_section = CollapsibleSection("\ud83d\udee0 Scraping")
-        for name in ["Scraping Images", "Scraping Descriptions"]:
-            btn = SidebarButton(name)
-            btn.clicked.connect(
-                lambda _, n=name, b=btn: self.display_content(
-                    f"Scraping : {n}", b
-                )
-            )
-            scrap_section.add_widget(btn)
-            self.button_group.append(btn)
+        self.scrap_img_btn = SidebarButton("Scraping Images")
+        self.scrap_img_btn.clicked.connect(
+            lambda _, b=self.scrap_img_btn: self.show_scraping_images(b)
+        )
+        scrap_section.add_widget(self.scrap_img_btn)
+        self.button_group.append(self.scrap_img_btn)
+
+        btn = SidebarButton("Scraping Descriptions")
+        btn.clicked.connect(
+            lambda _, b=btn: self.display_content("Scraping : Descriptions", b)
+        )
+        scrap_section.add_widget(btn)
+        self.button_group.append(btn)
         nav_layout.addWidget(scrap_section)
 
         nav_layout.addStretch()
@@ -209,6 +215,10 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(
             QLabel("Bienvenue sur COMPTA", alignment=Qt.AlignCenter)
         )
+
+        # Page for scraping images
+        self.scraping_images_page = ScrapingImagesWidget()
+        self.stack.addWidget(self.scraping_images_page)
 
         # Settings page displayed when the bottom button is clicked
         self.settings_page = QWidget()
@@ -243,6 +253,12 @@ class MainWindow(QMainWindow):
         label = QLabel(text, alignment=Qt.AlignCenter)
         self.stack.addWidget(label)
         self.stack.setCurrentWidget(label)
+
+    def show_scraping_images(self, button: SidebarButton) -> None:
+        """Display the scraping images page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.scraping_images_page)
 
     def show_settings(self) -> None:
         """Display the settings page."""

@@ -232,6 +232,32 @@ def pay_purchase(
         conn.commit()
 
 
+def delete_purchase(db_path: Path | str, purchase_id: int) -> None:
+    """Delete the purchase and its accounting entry."""
+    with connect(db_path) as conn:
+        cur = conn.execute(
+            "SELECT invoice_number FROM purchases WHERE id=?",
+            (purchase_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise ValueError("Invalid purchase id")
+        invoice = row[0]
+
+        conn.execute("DELETE FROM purchases WHERE id=?", (purchase_id,))
+
+        cur = conn.execute(
+            "SELECT id FROM entries WHERE journal='ACH' AND ref=?",
+            (invoice,),
+        )
+        row = cur.fetchone()
+        if row:
+            entry_id = row[0]
+            conn.execute("DELETE FROM entry_lines WHERE entry_id=?", (entry_id,))
+            conn.execute("DELETE FROM entries WHERE id=?", (entry_id,))
+        conn.commit()
+
+
 def fetch_purchases(db_path: Path | str, flt: PurchaseFilter) -> List[Purchase]:
     """Return purchases filtered according to *flt*."""
     query = "SELECT * FROM purchases WHERE 1=1"

@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal
 
-from MOTEUR.scraping.profile_manager import ProfileManager, Profile
+from MOTEUR.scraping.profile_manager import ProfileManager
 
 
 class ProfileWidget(QWidget):
@@ -66,7 +66,7 @@ class ProfileWidget(QWidget):
         main_layout.addLayout(btn_layout)
 
     # ------------------------------------------------------------------
-    def profile_selected(self, current, previous) -> None:  # noqa: D401 - Qt API
+    def profile_selected(self, current, previous) -> None:  # noqa: D401
         if current:
             name = current.text()
             self.name_edit.setText(name)
@@ -100,9 +100,11 @@ class ProfileWidget(QWidget):
                 break
         else:
             self.profile_list.addItem(name)
-        self.profile_list.setCurrentRow(
-            [self.profile_list.item(i).text() for i in range(self.profile_list.count())].index(name)
-        )
+        items = [
+            self.profile_list.item(i).text()
+            for i in range(self.profile_list.count())
+        ]
+        self.profile_list.setCurrentRow(items.index(name))
 
     def delete_profile(self) -> None:
         name = self.name_edit.text().strip()
@@ -124,4 +126,3 @@ class ProfileWidget(QWidget):
         name = self.name_edit.text().strip()
         if name:
             self.profile_chosen.emit(name)
-

@@ -43,7 +43,9 @@ def clean_filename(text: str) -> str:
     return ascii_text
 
 
-def rename_with_alt(path: Path, sentences: dict, warned: set[str], reserved: set[Path]) -> Path:
+def rename_with_alt(
+    path: Path, sentences: dict, warned: set[str], reserved: set[Path]
+) -> Path:
     """Rename *path* using ALT sentences if available."""
     product_key = path.parent.name.replace("_", " ")
     phrase_list = sentences.get(product_key)

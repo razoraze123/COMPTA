@@ -19,7 +19,11 @@ class ProfileManager:
     """Manage scraping profiles stored in a JSON file."""
 
     def __init__(self, path: Path | str | None = None) -> None:
-        self.path = Path(path) if path is not None else Path(__file__).with_name("profiles.json")
+        self.path = (
+            Path(path)
+            if path is not None
+            else Path(__file__).with_name("profiles.json")
+        )
         self.profiles: Dict[str, Profile] = {}
         self.load_profiles()
 

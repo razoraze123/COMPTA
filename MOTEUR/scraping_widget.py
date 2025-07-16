@@ -6,7 +6,7 @@ from pathlib import Path
 
 import logging
 
-from PySide6.QtCore import Qt, Slot, QObject, Signal, QThread, QUrl
+from PySide6.QtCore import Slot, QObject, Signal, QThread, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget,
@@ -104,7 +104,8 @@ class ScrapingImagesWidget(QWidget):
         self.folder_edit = QLineEdit()
         self.folder_edit.setPlaceholderText("\ud83d\udcc1 Destination images")
         self.folder_edit.setStyleSheet(
-            "padding: 8px; border-top-left-radius: 6px; border-bottom-left-radius: 6px;"
+            "padding: 8px; border-top-left-radius: 6px;"
+            " border-bottom-left-radius: 6px;"
         )
         folder_layout.addWidget(self.folder_edit)
 
@@ -112,7 +113,8 @@ class ScrapingImagesWidget(QWidget):
         self.browse_btn.setFixedWidth(30)
         self.browse_btn.clicked.connect(self.select_folder)
         self.browse_btn.setStyleSheet(
-            "padding: 6px; border-top-right-radius: 6px; border-bottom-right-radius: 6px;"
+            "padding: 6px; border-top-right-radius: 6px;"
+            " border-bottom-right-radius: 6px;"
         )
         folder_layout.addWidget(self.browse_btn)
 
@@ -209,6 +211,7 @@ class ScrapingImagesWidget(QWidget):
         self.scrape_folder = Path(result.get("folder", ""))
         self.console.append("✅ Terminé")
         if self.scrape_folder and self.scrape_folder.exists():
-            QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.scrape_folder)))
+            QDesktopServices.openUrl(
+                QUrl.fromLocalFile(str(self.scrape_folder))
+            )
         self.start_btn.setEnabled(True)
-

@@ -19,7 +19,10 @@ from selenium.common.exceptions import TimeoutException
 from tqdm import tqdm
 
 from .driver_utils import setup_driver
-from .constants import IMAGES_DEFAULT_SELECTOR as DEFAULT_CSS_SELECTOR, USER_AGENT
+from .constants import (
+    IMAGES_DEFAULT_SELECTOR as DEFAULT_CSS_SELECTOR,
+    USER_AGENT,
+)
 from . import download_helpers as dl_helpers
 from . import rename_helpers
 
@@ -57,7 +60,11 @@ def _find_product_name(driver) -> str:
     for by, value, attr in selectors:
         try:
             elem = driver.find_element(by, value)
-            text = elem.get_attribute(attr) if attr else getattr(elem, "text", "")
+            text = (
+                elem.get_attribute(attr)
+                if attr
+                else getattr(elem, "text", "")
+            )
             if text:
                 text = text.strip()
             if text:
@@ -82,7 +89,10 @@ def download_images(
     reserved_paths: set[Path] = set()
 
     driver = setup_driver()
-    driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": user_agent})
+    driver.execute_cdp_cmd(
+        "Network.setUserAgentOverride",
+        {"userAgent": user_agent},
+    )
 
     product_name = ""
     folder = Path()
@@ -115,7 +125,8 @@ def download_images(
 
         img_elements = driver.find_elements(By.CSS_SELECTOR, css_selector)
         logger.info(
-            f"\n\U0001F5BC {len(img_elements)} images trouvées avec le sélecteur : {css_selector}\n"
+            f"\n\U0001F5BC {len(img_elements)} images trouvées avec le "
+            f"sélecteur : {css_selector}\n"
         )
 
         total = len(img_elements)
@@ -157,7 +168,9 @@ def download_images(
                         )
                         futures[fut] = (idx, path)
                 except Exception as exc:
-                    logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
+                    logger.error(
+                        "\u274c Erreur pour l'image %s : %s", idx, exc
+                    )
             for fut in as_completed(futures):
                 idx, path = futures[fut]
                 try:
@@ -170,7 +183,9 @@ def download_images(
                     if first_image is None:
                         first_image = path
                 except Exception as exc:
-                    logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
+                    logger.error(
+                        "\u274c Erreur pour l'image %s : %s", idx, exc
+                    )
                     skipped += 1
                 pbar_update(1)
                 done_count += 1

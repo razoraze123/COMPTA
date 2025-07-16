@@ -38,7 +38,10 @@ def update_purchase(
     """Update a purchase row identified by *purchase_id*."""
     with sqlite3.connect(db_path) as conn:
         conn.execute(
-            "UPDATE purchases SET date = ?, label = ?, amount = ? WHERE id = ?",
+            (
+                "UPDATE purchases SET date = ?, label = ?, amount = ? "
+                "WHERE id = ?"
+            ),
             (date, label, amount, purchase_id),
         )
         conn.commit()

@@ -14,7 +14,10 @@ def _patch_download(monkeypatch):
         calls['css'] = css_selector
         return {}
 
-    monkeypatch.setattr('MOTEUR.scraping_widget.download_images', fake_download)
+    monkeypatch.setattr(
+        'MOTEUR.scraping_widget.download_images',
+        fake_download,
+    )
     return calls
 
 

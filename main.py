@@ -1,10 +1,12 @@
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QStackedWidget, QSizePolicy
+    QPushButton, QLabel, QStackedWidget, QSizePolicy, QMessageBox, QFrame
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 import sys
+import subprocess
+import os
 
 class SidebarButton(QPushButton):
     """Custom button used in the vertical sidebar."""
@@ -79,10 +81,35 @@ class MainWindow(QMainWindow):
         # Push remaining space to bottom
         sidebar.addStretch()
 
+        # Separator before the settings button
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setStyleSheet("margin:5px 0;")
+        sidebar.addWidget(line)
+
+        # Settings button pinned at the bottom
+        self.settings_btn = SidebarButton("\u2699\ufe0f Param\u00e8tres")
+        self.settings_btn.clicked.connect(self.show_settings)
+        sidebar.addWidget(self.settings_btn)
+        self.button_group.append(self.settings_btn)
+
         # Central widget that will host module pages
         self.stack = QStackedWidget()
         # Page 0 - welcome page
         self.stack.addWidget(QLabel("Bienvenue sur COMPTA", alignment=Qt.AlignCenter))
+
+        # Settings page displayed when the bottom button is clicked
+        self.settings_page = QWidget()
+        settings_layout = QVBoxLayout(self.settings_page)
+        title_label = QLabel("Param\u00e8tres \u2013 Maintenance du projet")
+        title_label.setAlignment(Qt.AlignCenter)
+        update_button = QPushButton("\ud83d\udd04 Mettre \u00e0 jour depuis GitHub")
+        update_button.clicked.connect(self.update_from_github)
+        settings_layout.addStretch()
+        settings_layout.addWidget(title_label)
+        settings_layout.addWidget(update_button, alignment=Qt.AlignCenter)
+        settings_layout.addStretch()
+        self.stack.addWidget(self.settings_page)
 
         # Assemble layouts proportionally (1/4 for sidebar, 3/4 for content)
         main_layout.addLayout(sidebar, 1)
@@ -124,6 +151,29 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         self.button_group[5].setChecked(True)
         self.stack.setCurrentWidget(QLabel("Module Scraping - à implémenter", alignment=Qt.AlignCenter))
+
+    def show_settings(self) -> None:
+        """Display the settings page."""
+        self.clear_selection()
+        self.button_group[6].setChecked(True)
+        self.stack.setCurrentWidget(self.settings_page)
+
+    def update_from_github(self) -> None:
+        """Run a git pull and show a message box with the result."""
+        result = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if result.returncode == 0:
+            QMessageBox.information(self, "Mise à jour", "✅ Mise à jour réussie")
+        else:
+            QMessageBox.critical(
+                self,
+                "Mise à jour",
+                f"❌ Échec de mise à jour\n{result.stderr}",
+            )
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

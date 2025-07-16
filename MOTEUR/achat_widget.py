@@ -25,6 +25,7 @@ from MOTEUR.achat_db import (
     delete_purchase,
     fetch_all_purchases,
 )
+from MOTEUR.models import Purchase
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Default path to the SQLite database
@@ -105,7 +106,20 @@ class AchatWidget(QWidget):
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
-        add_purchase(db_path, date, label, amount)
+        pur = Purchase(
+            id=None,
+            date=date,
+            invoice_number="AUTO",
+            supplier_id=1,
+            label=label,
+            ht_amount=amount,
+            vat_amount=0.0,
+            vat_rate=20.0,
+            account_code="601",
+            due_date=date,
+            payment_status="A_PAYER",
+        )
+        add_purchase(db_path, pur)
         self.load_purchases()
 
     @Slot()
@@ -128,7 +142,20 @@ class AchatWidget(QWidget):
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
-        update_purchase(db_path, purchase_id, date, label, amount)
+        pur = Purchase(
+            id=purchase_id,
+            date=date,
+            invoice_number="AUTO",
+            supplier_id=1,
+            label=label,
+            ht_amount=amount,
+            vat_amount=0.0,
+            vat_rate=20.0,
+            account_code="601",
+            due_date=date,
+            payment_status="A_PAYER",
+        )
+        update_purchase(db_path, pur)
         self.load_purchases()
 
     @Slot()

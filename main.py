@@ -167,6 +167,7 @@ class MainWindow(QMainWindow):
         scroll_content.setStyleSheet("background-color: #ffffff;")
 
         self.button_group: list[SidebarButton] = []
+        self.compta_buttons: dict[str, SidebarButton] = {}
 
         # Comptabilité section
         compta_section = CollapsibleSection(
@@ -183,6 +184,7 @@ class MainWindow(QMainWindow):
         }
         for name in compta_icons:
             btn = SidebarButton(name, icon_path=str(compta_icons[name]))
+            self.compta_buttons[name] = btn
             if name == "Tableau de bord":
                 self.dashboard_btn = btn
                 btn.clicked.connect(lambda _, b=btn: self.show_dashboard_page(b))
@@ -270,6 +272,15 @@ class MainWindow(QMainWindow):
 
         # Dashboard page showing purchase statistics
         self.dashboard_page = DashboardWidget()
+        self.dashboard_page.journal_requested.connect(
+            lambda: self.open_from_dashboard("Journal")
+        )
+        self.dashboard_page.grand_livre_requested.connect(
+            lambda: self.open_from_dashboard("Grand Livre")
+        )
+        self.dashboard_page.scraping_summary_requested.connect(
+            lambda: self.show_scraping_images(self.scrap_img_btn)
+        )
         self.stack.addWidget(self.dashboard_page)
 
         # Page for achats
@@ -337,6 +348,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.achat_page)
+
+    def open_from_dashboard(self, name: str) -> None:
+        """Open a comptabilité page from dashboard links."""
+        btn = self.compta_buttons.get(name)
+        if btn:
+            self.display_content(f"Comptabilité : {name}", btn)
 
     def show_settings(self) -> None:
         """Display the settings page."""

@@ -116,6 +116,7 @@ def download_images(
         pbar_update = getattr(pbar, "update", lambda n=1: None)
         pbar_close = getattr(pbar, "close", lambda: None)
         futures: dict = {}
+        done_count = 0
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
             for idx, img in enumerate(img_elements, start=1):
@@ -137,8 +138,9 @@ def download_images(
                         if first_image is None:
                             first_image = path
                         pbar_update(1)
+                        done_count += 1
                         if progress_callback:
-                            progress_callback(idx, total)
+                            progress_callback(done_count, total)
                     else:
                         fut = executor.submit(
                             dl_helpers.download_binary,
@@ -164,9 +166,12 @@ def download_images(
                     logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
                     skipped += 1
                 pbar_update(1)
+                done_count += 1
                 if progress_callback:
-                    progress_callback(idx, total)
+                    progress_callback(done_count, total)
         pbar_close()
+        if progress_callback and done_count != total:
+            progress_callback(total, total)
     finally:
         driver.quit()
 

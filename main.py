@@ -139,11 +139,8 @@ class MainWindow(QMainWindow):
         nav_layout.setSpacing(0)
         scroll.setWidget(scroll_content)
 
-        title = QLabel("COMPTA")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont("Arial", 16, QFont.Bold))
-        title.setStyleSheet("padding: 15px; background-color: #444; color: white;")
-        nav_layout.addWidget(title)
+        sidebar_container.setStyleSheet("background-color: #ffffff;")
+        scroll_content.setStyleSheet("background-color: #ffffff;")
 
         self.button_group: list[SidebarButton] = []
 

@@ -14,11 +14,15 @@ from .constants import USER_AGENT
 logger = logging.getLogger(__name__)
 
 
-def download_binary(url: str, path: Path, user_agent: str = USER_AGENT) -> None:
+def download_binary(
+    url: str, path: Path, user_agent: str = USER_AGENT
+) -> None:
     """Download binary content from *url* into *path* using *user_agent*."""
     headers = {"User-Agent": user_agent}
     try:
-        with requests.get(url, headers=headers, stream=True, timeout=10) as resp:
+        with requests.get(
+            url, headers=headers, stream=True, timeout=10
+        ) as resp:
             resp.raise_for_status()
             with path.open("wb") as fh:
                 for chunk in resp.iter_content(chunk_size=8192):

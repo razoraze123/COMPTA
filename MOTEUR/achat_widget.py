@@ -71,7 +71,11 @@ class AchatWidget(QWidget):
         layout.addLayout(btn_layout)
 
         self.table = QTableWidget(0, 3)
-        self.table.setHorizontalHeaderLabels(["Date", "Libell\u00e9", "Montant"])
+        self.table.setHorizontalHeaderLabels([
+            "Date",
+            "Libell\u00e9",
+            "Montant",
+        ])
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -93,7 +97,11 @@ class AchatWidget(QWidget):
     def add_purchase(self) -> None:
         label = self.label_edit.text().strip()
         if not label:
-            QMessageBox.warning(self, "Achat", "Veuillez saisir un libell\u00e9")
+            QMessageBox.warning(
+                self,
+                "Achat",
+                "Veuillez saisir un libell\u00e9",
+            )
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
@@ -104,11 +112,19 @@ class AchatWidget(QWidget):
     def edit_purchase(self) -> None:
         purchase_id = self.get_selected_id()
         if purchase_id is None:
-            QMessageBox.warning(self, "Achat", "S\u00e9lectionnez un achat")
+            QMessageBox.warning(
+                self,
+                "Achat",
+                "S\u00e9lectionnez un achat",
+            )
             return
         label = self.label_edit.text().strip()
         if not label:
-            QMessageBox.warning(self, "Achat", "Veuillez saisir un libell\u00e9")
+            QMessageBox.warning(
+                self,
+                "Achat",
+                "Veuillez saisir un libell\u00e9",
+            )
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
@@ -126,7 +142,9 @@ class AchatWidget(QWidget):
 
     def load_purchases(self) -> None:
         self.table.setRowCount(0)
-        for purchase_id, date, label, amount in fetch_all_purchases(db_path):
+        for purchase_id, date, label, amount in fetch_all_purchases(
+            db_path
+        ):
             row = self.table.rowCount()
             self.table.insertRow(row)
             item_date = QTableWidgetItem(date)
@@ -141,6 +159,8 @@ class AchatWidget(QWidget):
         item_label = self.table.item(row, 1)
         item_amount = self.table.item(row, 2)
         if item_date and item_label and item_amount:
-            self.date_edit.setDate(QDate.fromString(item_date.text(), "yyyy-MM-dd"))
+            self.date_edit.setDate(
+                QDate.fromString(item_date.text(), "yyyy-MM-dd")
+            )
             self.label_edit.setText(item_label.text())
             self.amount_spin.setValue(float(item_amount.text()))

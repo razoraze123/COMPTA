@@ -199,7 +199,8 @@ class MainWindow(QMainWindow):
         scrap_section = CollapsibleSection("\ud83d\udee0 Scraping")
 
         self.profiles_btn = SidebarButton(
-            "Profil Scraping", icon_path=str(BASE_DIR / "icons" / "profile.svg")
+            "Profil Scraping",
+            icon_path=str(BASE_DIR / "icons" / "profile.svg"),
         )
         self.profiles_btn.clicked.connect(
             lambda _, b=self.profiles_btn: self.show_profiles(b)
@@ -208,7 +209,8 @@ class MainWindow(QMainWindow):
         self.button_group.append(self.profiles_btn)
 
         self.scrap_img_btn = SidebarButton(
-            "Scraping Images", icon_path=str(BASE_DIR / "icons" / "scraping.svg")
+            "Scraping Images",
+            icon_path=str(BASE_DIR / "icons" / "scraping.svg"),
         )
         self.scrap_img_btn.clicked.connect(
             lambda _, b=self.scrap_img_btn: self.show_scraping_images(b)
@@ -217,7 +219,8 @@ class MainWindow(QMainWindow):
         self.button_group.append(self.scrap_img_btn)
 
         btn = SidebarButton(
-            "Scraping Descriptions", icon_path=str(BASE_DIR / "icons" / "text.svg")
+            "Scraping Descriptions",
+            icon_path=str(BASE_DIR / "icons" / "text.svg"),
         )
         btn.clicked.connect(
             lambda _, b=btn: self.display_content("Scraping : Descriptions", b)

@@ -18,6 +18,7 @@ from PySide6.QtCore import Qt, QPropertyAnimation
 from PySide6.QtGui import QIcon
 
 from MOTEUR.scraping_widget import ScrapingImagesWidget
+from MOTEUR.achat_widget import AchatWidget
 import sys
 import subprocess
 
@@ -180,11 +181,15 @@ class MainWindow(QMainWindow):
         }
         for name in compta_icons:
             btn = SidebarButton(name, icon_path=str(compta_icons[name]))
-            btn.clicked.connect(
-                lambda _, n=name, b=btn: self.display_content(
-                    f"Comptabilité : {n}", b
+            if name == "Achat":
+                self.achat_btn = btn
+                btn.clicked.connect(lambda _, b=btn: self.show_achat_page(b))
+            else:
+                btn.clicked.connect(
+                    lambda _, n=name, b=btn: self.display_content(
+                        f"Comptabilité : {n}", b
+                    )
                 )
-            )
             compta_section.add_widget(btn)
             self.button_group.append(btn)
         nav_layout.addWidget(compta_section)
@@ -237,6 +242,10 @@ class MainWindow(QMainWindow):
         self.scraping_images_page = ScrapingImagesWidget()
         self.stack.addWidget(self.scraping_images_page)
 
+        # Page for achats
+        self.achat_page = AchatWidget()
+        self.stack.addWidget(self.achat_page)
+
         # Settings page displayed when the bottom button is clicked
         self.settings_page = QWidget()
         settings_layout = QVBoxLayout(self.settings_page)
@@ -276,6 +285,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.scraping_images_page)
+
+    def show_achat_page(self, button: SidebarButton) -> None:
+        """Display the achat page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.achat_page)
 
     def show_settings(self) -> None:
         """Display the settings page."""

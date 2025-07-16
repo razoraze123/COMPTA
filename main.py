@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
 
         # Comptabilité section
         compta_section = CollapsibleSection(
-            "\ud83d\udcc1 Comptabilit\u00e9", hide_title_when_collapsed= false
+            "\ud83d\udcc1 Comptabilit\u00e9", hide_title_when_collapsed=False
         )
         for name in ["Tableau de bord", "Journal", "Grand Livre", "Bilan", "Résultat"]:
             btn = SidebarButton(name)

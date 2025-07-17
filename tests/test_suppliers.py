@@ -33,10 +33,10 @@ def setup_demo(db: Path) -> None:
 def test_supplier_balance_computation(tmp_path: Path) -> None:
     db = tmp_path / "s.db"
     setup_demo(db)
-    p1 = Purchase(None, "2025-01-01", "INV1", 1, "Test", 100.0, 0.0, 0, "601", "2025-01-31", "A_PAYER")
+    p1 = Purchase(None, "2025-01-01", "INV1", 1, "Test", 100.0, 0, "601", "2025-01-31", "A_PAYER")
     pid = add_purchase(db, p1)
     pay_purchase(db, pid, "2025-01-10", "VIR", 60.0)
-    p2 = Purchase(None, "2025-02-01", "INV2", 2, "Deux", 200.0, 0.0, 0, "601", "2025-03-01", "A_PAYER")
+    p2 = Purchase(None, "2025-02-01", "INV2", 2, "Deux", 200.0, 0, "601", "2025-03-01", "A_PAYER")
     add_purchase(db, p2)
     balances = {name: bal for _, name, bal in get_suppliers_with_balance(db)}
     assert round(balances["A"], 2) == -40.0
@@ -46,10 +46,10 @@ def test_supplier_balance_computation(tmp_path: Path) -> None:
 def test_supplier_transactions_fetch(tmp_path: Path) -> None:
     db = tmp_path / "s.db"
     setup_demo(db)
-    p1 = Purchase(None, "2025-01-01", "INV1", 1, "Test", 100.0, 0.0, 0, "601", "2025-01-31", "A_PAYER")
+    p1 = Purchase(None, "2025-01-01", "INV1", 1, "Test", 100.0, 0, "601", "2025-01-31", "A_PAYER")
     pid1 = add_purchase(db, p1)
     pay_purchase(db, pid1, "2025-01-15", "VIR", 50.0)
-    p2 = Purchase(None, "2025-01-20", "INV2", 1, "Bis", 200.0, 0.0, 0, "601", "2025-02-20", "A_PAYER")
+    p2 = Purchase(None, "2025-01-20", "INV2", 1, "Bis", 200.0, 0, "601", "2025-02-20", "A_PAYER")
     add_purchase(db, p2)
 
     rows = get_supplier_transactions(db, 1)
@@ -72,7 +72,7 @@ def test_auto_supplier_creation(tmp_path: Path) -> None:
 
     w.supplier_combo.setEditText("New")
     w.label_edit.setText("Test")
-    w.amount_spin.setValue(100.0)
+    w.amount_spin.setValue(120.0)
     w.vat_combo.setCurrentText("20")
     w.account_combo.setCurrentIndex(0)
     w.add_purchase()

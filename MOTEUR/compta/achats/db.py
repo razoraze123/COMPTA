@@ -41,11 +41,10 @@ SQL_CREATE_PURCHASES = """
 CREATE TABLE IF NOT EXISTS purchases (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
-    invoice_number TEXT NOT NULL,
+    piece TEXT NOT NULL,
     supplier_id INTEGER NOT NULL REFERENCES suppliers(id),
     label TEXT NOT NULL,
-    ht_amount REAL NOT NULL CHECK(ht_amount >= 0),
-    vat_amount REAL NOT NULL CHECK(vat_amount >= 0),
+    ttc_amount REAL NOT NULL CHECK(ttc_amount >= 0),
     vat_rate REAL NOT NULL CHECK(vat_rate IN (0,2.1,5.5,10,20)),
     account_code TEXT NOT NULL REFERENCES accounts(code),
     due_date TEXT NOT NULL,
@@ -63,8 +62,8 @@ CREATE TABLE IF NOT EXISTS purchases (
 
 SQL_CREATE_INDEXES = [
     (
-        "CREATE UNIQUE INDEX IF NOT EXISTS unq_supplier_invoice "
-        "ON purchases(supplier_id, invoice_number)"
+        "CREATE UNIQUE INDEX IF NOT EXISTS unq_supplier_piece "
+        "ON purchases(supplier_id, piece)"
     ),
     "CREATE INDEX IF NOT EXISTS idx_purchases_date ON purchases(date)",
     (
@@ -73,51 +72,30 @@ SQL_CREATE_INDEXES = [
     ),
 ]
 
-SQL_TRIGGER_INSERT = """
-CREATE TRIGGER IF NOT EXISTS trg_purchase_vat
-BEFORE INSERT ON purchases
-FOR EACH ROW
-BEGIN
-  SELECT CASE
-    WHEN ROUND(NEW.ht_amount * NEW.vat_rate / 100, 2) <> NEW.vat_amount
-    THEN RAISE(FAIL, 'VAT amount inconsistent with HT × rate')
-  END;
-END;
-"""
-
-SQL_TRIGGER_UPDATE = """
-CREATE TRIGGER IF NOT EXISTS trg_purchase_vat_up
-BEFORE UPDATE ON purchases
-FOR EACH ROW
-BEGIN
-  SELECT CASE
-    WHEN ROUND(NEW.ht_amount * NEW.vat_rate / 100, 2) <> NEW.vat_amount
-    THEN RAISE(FAIL, 'VAT amount inconsistent with HT × rate')
-  END;
-END;
-"""
 
 SQL_INSERT_PURCHASE = """
     INSERT INTO purchases (
-        date, invoice_number, supplier_id, label, ht_amount, vat_amount,
+        date, piece, supplier_id, label, ttc_amount,
         vat_rate, account_code, due_date, payment_status, payment_date,
         payment_method, is_advance, is_invoice_received, attachment_path,
         created_by
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """
 
 SQL_UPDATE_PURCHASE = """
     UPDATE purchases SET
-        date=?, invoice_number=?, supplier_id=?, label=?, ht_amount=?,
-        vat_amount=?, vat_rate=?, account_code=?, due_date=?,
+        date=?, piece=?, supplier_id=?, label=?, ttc_amount=?,
+        vat_rate=?, account_code=?, due_date=?,
         payment_status=?, payment_date=?, payment_method=?, is_advance=?,
         is_invoice_received=?, attachment_path=?, updated_at=CURRENT_TIMESTAMP
     WHERE id=?
     """
 
 SQL_VAT_SUMMARY = (
-    "SELECT vat_rate, SUM(ht_amount) as base, SUM(vat_amount) as vat"
-    " FROM purchases WHERE date BETWEEN ? AND ? GROUP BY vat_rate"
+    "SELECT vat_rate, "
+    "SUM(ROUND(ttc_amount/(1+vat_rate/100),2)) as base, "
+    "SUM(ttc_amount - ROUND(ttc_amount/(1+vat_rate/100),2)) as vat "
+    "FROM purchases WHERE date BETWEEN ? AND ? GROUP BY vat_rate"
 )
 
 
@@ -129,8 +107,6 @@ def init_db(db_path: Path | str) -> None:
         conn.execute(SQL_CREATE_PURCHASES)
         for sql in SQL_CREATE_INDEXES:
             conn.execute(sql)
-        conn.execute(SQL_TRIGGER_INSERT)
-        conn.execute(SQL_TRIGGER_UPDATE)
         conn.commit()
 
 
@@ -153,13 +129,13 @@ def add_supplier(
 
 def add_purchase(db_path: Path | str, pur: Purchase) -> int:
     """Insert *pur* and generate accounting entry."""
-    vat = round(pur.ht_amount * pur.vat_rate / 100, 2)
-    pur.vat_amount = vat
+    ht = round(pur.ttc_amount / (1 + pur.vat_rate / 100), 2)
+    vat = round(pur.ttc_amount - ht, 2)
     with connect(db_path) as conn:
         conn.execute("BEGIN")
         try:
-            if pur.invoice_number == "AUTO":
-                pur.invoice_number = next_sequence(
+            if pur.piece == "AUTO":
+                pur.piece = next_sequence(
                     conn, "AC", int(pur.date[:4])
                 )
             _ensure_account(conn, pur.account_code)
@@ -167,11 +143,10 @@ def add_purchase(db_path: Path | str, pur: Purchase) -> int:
                 SQL_INSERT_PURCHASE,
                 (
                     pur.date,
-                    pur.invoice_number,
+                    pur.piece,
                     pur.supplier_id,
                     pur.label,
-                    pur.ht_amount,
-                    pur.vat_amount,
+                    pur.ttc_amount,
                     pur.vat_rate,
                     pur.account_code,
                     pur.due_date,
@@ -194,25 +169,19 @@ def add_purchase(db_path: Path | str, pur: Purchase) -> int:
                 "44562" if pur.account_code.startswith("2") else "44566"
             )
             lines = [
-                EntryLine(
-                    account=pur.account_code,
-                    debit=pur.ht_amount,
-                    credit=0.0,
-                ),
-                EntryLine(
-                    account=vat_account, debit=pur.vat_amount, credit=0.0
-                ),
+                EntryLine(account=pur.account_code, debit=ht, credit=0.0),
+                EntryLine(account=vat_account, debit=vat, credit=0.0),
                 EntryLine(
                     account=credit_account,
                     debit=0.0,
-                    credit=pur.ht_amount + pur.vat_amount,
+                    credit=pur.ttc_amount,
                 ),
             ]
             _create_entry(
                 conn,
                 "ACH",
                 pur.date,
-                pur.invoice_number,
+                pur.piece,
                 pur.label,
                 lines,
             )
@@ -228,13 +197,13 @@ def update_purchase(db_path: Path | str, pur: Purchase) -> None:
     """Update *pur* and recreate its accounting entry."""
     if pur.id is None:
         raise ValueError("Purchase id required")
-    vat = round(pur.ht_amount * pur.vat_rate / 100, 2)
-    pur.vat_amount = vat
+    ht = round(pur.ttc_amount / (1 + pur.vat_rate / 100), 2)
+    vat = round(pur.ttc_amount - ht, 2)
     with connect(db_path) as conn:
         conn.execute("BEGIN")
         try:
-            if pur.invoice_number == "AUTO":
-                pur.invoice_number = next_sequence(
+            if pur.piece == "AUTO":
+                pur.piece = next_sequence(
                     conn, "AC", int(pur.date[:4])
                 )
             _ensure_account(conn, pur.account_code)
@@ -242,11 +211,10 @@ def update_purchase(db_path: Path | str, pur: Purchase) -> None:
                 SQL_UPDATE_PURCHASE,
                 (
                     pur.date,
-                    pur.invoice_number,
+                    pur.piece,
                     pur.supplier_id,
                     pur.label,
-                    pur.ht_amount,
-                    pur.vat_amount,
+                    pur.ttc_amount,
                     pur.vat_rate,
                     pur.account_code,
                     pur.due_date,
@@ -262,7 +230,7 @@ def update_purchase(db_path: Path | str, pur: Purchase) -> None:
             # delete previous entry
             cur = conn.execute(
                 "SELECT id FROM entries WHERE journal='ACH' AND ref=?",
-                (pur.invoice_number,),
+                (pur.piece,),
             )
             row = cur.fetchone()
             if row:
@@ -284,25 +252,19 @@ def update_purchase(db_path: Path | str, pur: Purchase) -> None:
                 "44562" if pur.account_code.startswith("2") else "44566"
             )
             lines = [
-                EntryLine(
-                    account=pur.account_code,
-                    debit=pur.ht_amount,
-                    credit=0.0,
-                ),
-                EntryLine(
-                    account=vat_account, debit=pur.vat_amount, credit=0.0
-                ),
+                EntryLine(account=pur.account_code, debit=ht, credit=0.0),
+                EntryLine(account=vat_account, debit=vat, credit=0.0),
                 EntryLine(
                     account=credit_account,
                     debit=0.0,
-                    credit=pur.ht_amount + pur.vat_amount,
+                    credit=pur.ttc_amount,
                 ),
             ]
             _create_entry(
                 conn,
                 "ACH",
                 pur.date,
-                pur.invoice_number,
+                pur.piece,
                 pur.label,
                 lines,
             )
@@ -326,7 +288,7 @@ def pay_purchase(
         try:
             cur = conn.execute(
                 (
-                    "SELECT ht_amount, vat_amount, invoice_number, "
+                    "SELECT ttc_amount, vat_rate, piece, "
                     "payment_status, is_advance, is_invoice_received "
                     "FROM purchases WHERE id=?"
                 ),
@@ -335,7 +297,7 @@ def pay_purchase(
             row = cur.fetchone()
             if not row:
                 raise ValueError("Invalid purchase id")
-            total = row[0] + row[1]
+            total = row[0]
             paid = conn.execute(
                 (
                     "SELECT COALESCE(SUM(credit),0) FROM entry_lines "
@@ -385,13 +347,13 @@ def delete_purchase(db_path: Path | str, purchase_id: int) -> None:
         conn.execute("BEGIN")
         try:
             cur = conn.execute(
-                "SELECT invoice_number FROM purchases WHERE id=?",
+                "SELECT piece FROM purchases WHERE id=?",
                 (purchase_id,),
             )
             row = cur.fetchone()
             if not row:
                 raise ValueError("Invalid purchase id")
-            invoice = row[0]
+            piece = row[0]
 
             conn.execute(
                 "DELETE FROM purchases WHERE id=?",
@@ -400,7 +362,7 @@ def delete_purchase(db_path: Path | str, purchase_id: int) -> None:
 
             cur = conn.execute(
                 "SELECT id FROM entries WHERE journal='ACH' AND ref=?",
-                (invoice,),
+                (piece,),
             )
             row = cur.fetchone()
             if row:
@@ -451,8 +413,8 @@ def fetch_all_purchases(db_path: Path | str):
     with connect(db_path) as conn:
         cur = conn.execute(
             (
-                "SELECT id, date, label, ht_amount + vat_amount as ttc, "
-                "due_date, payment_status FROM purchases ORDER BY date"
+                "SELECT id, date, label, ttc_amount, due_date, payment_status "
+                "FROM purchases ORDER BY date"
             )
         )
         return [
@@ -460,7 +422,7 @@ def fetch_all_purchases(db_path: Path | str):
                 r["id"],
                 r["date"],
                 r["label"],
-                r["ttc"],
+                r["ttc_amount"],
                 r["due_date"],
                 r["payment_status"],
             )

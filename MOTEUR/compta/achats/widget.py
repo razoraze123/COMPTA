@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from .purchase_dialog import PurchaseDialog
+from .piece_dialog import PieceDialog
 
 from .db import (
     init_db,
@@ -53,6 +53,8 @@ class AchatWidget(QWidget):
         layout = QVBoxLayout(self)
 
         form_layout = QHBoxLayout()
+        self.form_panel = QWidget()
+        self.form_panel.setLayout(form_layout)
         form_layout.addWidget(QLabel("Date:"))
         self.date_edit = QDateEdit(QDate.currentDate())
         self.date_edit.setCalendarPopup(True)
@@ -64,16 +66,16 @@ class AchatWidget(QWidget):
         self.load_suppliers()
         form_layout.addWidget(self.supplier_combo)
 
-        form_layout.addWidget(QLabel("Facture:"))
-        self.invoice_edit = QLineEdit()
-        self.invoice_edit.setText(self.get_next_inv())
-        form_layout.addWidget(self.invoice_edit)
+        form_layout.addWidget(QLabel("Pièce:"))
+        self.piece_edit = QLineEdit()
+        self.piece_edit.setText(self.get_next_inv())
+        form_layout.addWidget(self.piece_edit)
 
         form_layout.addWidget(QLabel("Libell\u00e9:"))
         self.label_edit = QLineEdit()
         form_layout.addWidget(self.label_edit)
 
-        form_layout.addWidget(QLabel("Montant HT:"))
+        form_layout.addWidget(QLabel("Montant TTC:"))
         self.amount_spin = QDoubleSpinBox()
         self.amount_spin.setDecimals(2)
         self.amount_spin.setMaximum(1e9)
@@ -100,7 +102,8 @@ class AchatWidget(QWidget):
         self.attach_btn.clicked.connect(self.choose_file)
         form_layout.addWidget(self.attach_btn)
 
-        layout.addLayout(form_layout)
+        layout.addWidget(self.form_panel)
+        self.form_panel.hide()
 
         btn_layout = QHBoxLayout()
         self.saisir_btn = QPushButton("Saisir…")
@@ -179,7 +182,7 @@ class AchatWidget(QWidget):
             (self.account_combo.itemData(i), self.account_combo.itemText(i))
             for i in range(self.account_combo.count())
         ]
-        dlg = PurchaseDialog(suppliers, accounts, self.get_next_inv(), self)
+        dlg = PieceDialog(suppliers, accounts, self.get_next_inv(), self)
         if dlg.exec() == QDialog.Accepted:
             pur = dlg.to_purchase()
             if pur.supplier_id is None:
@@ -188,7 +191,7 @@ class AchatWidget(QWidget):
                 self.load_suppliers()
             add_purchase(db_path, pur)
             self.load_purchases()
-            self.invoice_edit.setText(self.get_next_inv())
+            self.piece_edit.setText(self.get_next_inv())
             self.label_edit.clear()
             self.amount_spin.setValue(0.0)
             self.vat_combo.setCurrentText("20")
@@ -224,11 +227,10 @@ class AchatWidget(QWidget):
         pur = Purchase(
             id=None,
             date=date,
-            invoice_number=self.invoice_edit.text() or "AUTO",
+            piece=self.piece_edit.text() or "AUTO",
             supplier_id=supplier_id,
             label=label,
-            ht_amount=amount,
-            vat_amount=0.0,
+            ttc_amount=amount,
             vat_rate=float(self.vat_combo.currentText()),
             account_code=self.account_combo.currentData(),
             due_date=self.due_edit.date().toString("yyyy-MM-dd"),
@@ -238,7 +240,7 @@ class AchatWidget(QWidget):
         add_purchase(db_path, pur)
         self.load_purchases()
         self.attachment_path = None
-        self.invoice_edit.setText(self.get_next_inv())
+        self.piece_edit.setText(self.get_next_inv())
 
     @Slot()
     def edit_purchase(self) -> None:
@@ -277,11 +279,10 @@ class AchatWidget(QWidget):
         pur = Purchase(
             id=purchase_id,
             date=date,
-            invoice_number=self.invoice_edit.text() or "AUTO",
+            piece=self.piece_edit.text() or "AUTO",
             supplier_id=supplier_id,
             label=label,
-            ht_amount=amount,
-            vat_amount=0.0,
+            ttc_amount=amount,
             vat_rate=float(self.vat_combo.currentText()),
             account_code=self.account_combo.currentData(),
             due_date=self.due_edit.date().toString("yyyy-MM-dd"),
@@ -336,7 +337,7 @@ class AchatWidget(QWidget):
             pid = item_date.data(Qt.UserRole)
             with connect(db_path) as conn:
                 cur = conn.execute(
-                    "SELECT supplier_id, invoice_number, vat_rate, "
+                    "SELECT supplier_id, piece, vat_rate, "
                     "account_code, due_date, attachment_path "
                     "FROM purchases WHERE id=?",
                     (pid,),
@@ -346,7 +347,7 @@ class AchatWidget(QWidget):
                     idx = self.supplier_combo.findData(r[0])
                     if idx >= 0:
                         self.supplier_combo.setCurrentIndex(idx)
-                    self.invoice_edit.setText(r[1])
+                    self.piece_edit.setText(r[1])
                     idx = self.vat_combo.findText(str(r[2]))
                     if idx >= 0:
                         self.vat_combo.setCurrentIndex(idx)

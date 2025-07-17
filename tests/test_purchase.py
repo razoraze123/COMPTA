@@ -30,8 +30,7 @@ def test_add_purchase_balanced():
         "AUTO",
         1,
         "Fournitures",
-        100.0,
-        0.0,
+        120.0,
         20,
         "601",
         "2025-01-31",
@@ -40,7 +39,7 @@ def test_add_purchase_balanced():
     add_purchase(DB, pur)
     with connect(DB) as conn:
         eid = conn.execute(
-            "SELECT id FROM entries WHERE ref=?", (pur.invoice_number,)
+            "SELECT id FROM entries WHERE ref=?", (pur.piece,)
         ).fetchone()[0]
     assert entry_balanced(DB, eid)
 
@@ -55,7 +54,6 @@ def test_duplicate_invoice_rejected():
         "Test",
         10,
         0,
-        0,
         "601",
         "2025-01-31",
         "A_PAYER",
@@ -68,7 +66,6 @@ def test_duplicate_invoice_rejected():
         1,
         "Bis",
         20,
-        0,
         0,
         "601",
         "2025-02-01",
@@ -86,8 +83,7 @@ def test_payment_updates_status_and_entry_balanced():
         "INV2",
         1,
         "Test",
-        100,
-        0,
+        120,
         20,
         "601",
         "2025-01-31",

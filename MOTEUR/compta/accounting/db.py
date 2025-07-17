@@ -44,6 +44,12 @@ CREATE TABLE IF NOT EXISTS entry_lines (
     letter_code TEXT
 )"""
 
+SQL_CREATE_JOURNALS = """
+CREATE TABLE IF NOT EXISTS journals (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+)"""
+
 SQL_INSERT_ENTRY = (
     "INSERT INTO entries (journal, ref, date, memo) VALUES (?,?,?,?)"
 )
@@ -110,6 +116,7 @@ def init_db(db_path: Path | str) -> None:
         conn.execute(SQL_CREATE_ENTRIES)
         conn.execute(SQL_CREATE_LINES)
         conn.execute(SQL_CREATE_SEQUENCES)
+        conn.execute(SQL_CREATE_JOURNALS)
         conn.execute(SQL_IDX_ENTRIES_DATE)
         conn.execute(SQL_IDX_ENTRIES_REF)
         conn.commit()

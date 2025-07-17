@@ -157,15 +157,15 @@ class DashboardWidget(QWidget):
         self.refresh()
 
     # ------------------------------------------------------------------
-    def _load_purchases(self) -> list[tuple[int, str, str, float]]:
+    def _load_purchases(self) -> list[tuple[int, str, str, float, str, str]]:
         return fetch_all_purchases(DB_PATH)
 
-    def _compute_metrics(self, rows: list[tuple[int, str, str, float]]):
+    def _compute_metrics(self, rows: list[tuple[int, str, str, float, str, str]]):
         total_count = len(rows)
         total_amount = sum(r[3] for r in rows)
 
         by_month: dict[str, float] = defaultdict(float)
-        for _pid, date_str, _label, amount in rows:
+        for _pid, date_str, _label, amount, *_ in rows:
             try:
                 dt = datetime.strptime(date_str, "%Y-%m-%d")
             except ValueError:

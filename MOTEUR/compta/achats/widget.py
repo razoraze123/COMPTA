@@ -18,16 +18,16 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from .achat_db import (
+from .db import (
     init_db,
     add_purchase,
     update_purchase,
     delete_purchase,
     fetch_all_purchases,
 )
-from .models import Purchase
+from ..models import Purchase
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Default path to the SQLite database
 db_path = BASE_DIR / "compta.db"
 

@@ -16,12 +16,12 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
-from .achat_db import fetch_all_purchases, init_db
+from ..achats.db import fetch_all_purchases, init_db
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Default path to the SQLite database used in AchatWidget
 DB_PATH = BASE_DIR / "compta.db"
-CONFIG_PATH = Path(__file__).with_name("dashboard_config.json")
+CONFIG_PATH = Path(__file__).with_name("config.json")
 
 DEFAULT_CONFIG = {
     "show_total_count": True,

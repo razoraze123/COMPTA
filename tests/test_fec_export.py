@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from MOTEUR.compta.achat_db import init_db, add_purchase
-from MOTEUR.compta.accounting_db import export_fec
+from MOTEUR.compta.achats.db import init_db, add_purchase
+from MOTEUR.compta.accounting.db import export_fec
 from MOTEUR.compta.models import Purchase
 
 

@@ -121,7 +121,7 @@ Le fichier des écritures comptables peut ensuite être généré pour une anné
 ```bash
 python - <<'PY'
 from pathlib import Path
-from MOTEUR.compta.accounting_db import export_fec
+from MOTEUR.compta.accounting.db import export_fec
 export_fec('demo.db', 2024, Path('fec.csv'))
 PY
 ```

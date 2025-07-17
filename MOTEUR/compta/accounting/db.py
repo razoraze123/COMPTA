@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
-from .db import connect
-from .models import EntryLine
+from ..db import connect
+from ..models import EntryLine
 
 SQL_CREATE_ACCOUNTS = """
 CREATE TABLE IF NOT EXISTS accounts (

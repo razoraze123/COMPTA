@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from .vente_db import (
+from .db import (
     init_db,
     add_sale,
     update_sale,
@@ -26,7 +26,7 @@ from .vente_db import (
     fetch_all_sales,
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Default path to the SQLite database
 db_path = BASE_DIR / "compta.db"
 

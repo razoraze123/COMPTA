@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-import MOTEUR.compta.dashboard_widget as dw
+import MOTEUR.compta.dashboard.widget as dw
 
 
 def test_default_config_created(tmp_path: Path, monkeypatch) -> None:

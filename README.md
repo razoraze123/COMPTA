@@ -130,6 +130,10 @@ La fonction `get_vat_summary` de `achat_db` permet d'obtenir le récapitulatif d
 
 🔧 Contribution
 Ce projet est en développement actif. Toute idée, retour ou contribution est bienvenue.
+Deux fichiers texte servent de référence pour le code :
+- `MOTEUR/compta/compta.txt`
+- `MOTEUR/scraping/scraping.txt`
+Ils doivent être mis à jour à chaque ajout ou modification de code afin de rester cohérents avec les modules correspondants.
 
 🧠 Auteur
 Projet conçu et maintenu par Lamine.

@@ -1,28 +1,31 @@
 from pathlib import Path
-
-from PySide6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QLabel,
-    QStackedWidget,
-    QSizePolicy,
-    QMessageBox,
-    QFrame,
-    QScrollArea,
-)
-from PySide6.QtCore import Qt, QPropertyAnimation, Slot
-from PySide6.QtGui import QIcon
+import sys
+try:
+    from PySide6.QtWidgets import (
+        QApplication,
+        QMainWindow,
+        QWidget,
+        QVBoxLayout,
+        QHBoxLayout,
+        QPushButton,
+        QLabel,
+        QStackedWidget,
+        QSizePolicy,
+        QMessageBox,
+        QFrame,
+        QScrollArea,
+    )
+    from PySide6.QtCore import Qt, QPropertyAnimation, Slot
+    from PySide6.QtGui import QIcon
+except ModuleNotFoundError:
+    print("Install dependencies with pip install -r requirements.txt")
+    sys.exit(1)
 
 from MOTEUR.scraping_widget import ScrapingImagesWidget
 from MOTEUR.achat_widget import AchatWidget
 from MOTEUR.vente_widget import VenteWidget
 from MOTEUR.profile_widget import ProfileWidget
 from MOTEUR.dashboard_widget import DashboardWidget
-import sys
 import subprocess
 
 BASE_DIR = Path(__file__).resolve().parent

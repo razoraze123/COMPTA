@@ -5,6 +5,9 @@ from pathlib import Path
 from MOTEUR.scraping.profiles.manager import ProfileManager
 from MOTEUR.scraping.image_scraper.constants import IMAGES_DEFAULT_SELECTOR
 from MOTEUR.scraping.widgets.scraping_widget import ScrapeWorker
+from MOTEUR.scraping.widgets import profile_widget as pw
+from MOTEUR.scraping.widgets import scraping_widget as sw
+from PySide6.QtWidgets import QApplication
 
 
 def _patch_download(monkeypatch):
@@ -107,3 +110,25 @@ def test_download_images_timeout_handled(monkeypatch, caplog) -> None:
         "Timeout waiting for elements with selector img.css" in rec.message
         for rec in caplog.records
     )
+
+
+def test_profile_widget_updates_scraping_widget(tmp_path: Path, monkeypatch) -> None:
+    import os
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    app = QApplication.instance() or QApplication([])
+
+    json_path = tmp_path / "profiles.json"
+
+    monkeypatch.setattr(pw, "ProfileManager", lambda *a, **k: ProfileManager(json_path))
+    monkeypatch.setattr(sw, "ProfileManager", lambda *a, **k: ProfileManager(json_path))
+
+    prof_w = pw.ProfileWidget()
+    scrap_w = sw.ScrapingImagesWidget()
+    prof_w.profiles_updated.connect(scrap_w.refresh_profiles)
+
+    prof_w.name_edit.setText("new")
+    prof_w.css_edit.setText("img.x")
+    prof_w.add_profile()
+
+    items = [scrap_w.profile_combo.itemText(i) for i in range(scrap_w.profile_combo.count())]
+    assert "new" in items

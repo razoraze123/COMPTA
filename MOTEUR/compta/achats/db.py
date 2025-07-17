@@ -99,12 +99,48 @@ SQL_VAT_SUMMARY = (
 )
 
 
+def _column_exists(conn, table: str, column: str) -> bool:
+    """Return True if *column* exists in *table*."""
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    return column in [row[1] for row in cur.fetchall()]
+
+
+def _migrate_schema(conn) -> None:
+    """Migrate old purchase schema to the current version."""
+    cur = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='purchases'"
+    )
+    if not cur.fetchone():
+        return
+
+    # Add new columns if missing
+    if _column_exists(conn, "purchases", "invoice_number") and not _column_exists(
+        conn, "purchases", "piece"
+    ):
+        conn.execute("ALTER TABLE purchases ADD COLUMN piece TEXT")
+        conn.execute(
+            "UPDATE purchases SET piece=invoice_number WHERE piece IS NULL OR piece=''"
+        )
+
+    if _column_exists(conn, "purchases", "ht_amount") and _column_exists(
+        conn, "purchases", "vat_amount"
+    ) and not _column_exists(conn, "purchases", "ttc_amount"):
+        conn.execute("ALTER TABLE purchases ADD COLUMN ttc_amount REAL")
+        conn.execute("UPDATE purchases SET ttc_amount=ht_amount + vat_amount")
+
+    # Drop obsolete triggers and indexes from old schema
+    conn.execute("DROP TRIGGER IF EXISTS trg_purchase_vat")
+    conn.execute("DROP TRIGGER IF EXISTS trg_purchase_vat_up")
+    conn.execute("DROP INDEX IF EXISTS unq_supplier_invoice")
+
+
 def init_db(db_path: Path | str) -> None:
-    """Create purchase related tables."""
+    """Create purchase related tables and migrate old schema if needed."""
     init_accounting(db_path)
     with connect(db_path) as conn:
         conn.execute(SQL_CREATE_SUPPLIERS)
         conn.execute(SQL_CREATE_PURCHASES)
+        _migrate_schema(conn)
         for sql in SQL_CREATE_INDEXES:
             conn.execute(sql)
         conn.commit()

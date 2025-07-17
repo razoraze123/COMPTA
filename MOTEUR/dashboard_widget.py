@@ -34,7 +34,9 @@ try:
     import matplotlib
 
     matplotlib.use("QtAgg")  # Use Qt backend for PySide6
-    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qtagg import (
+        FigureCanvasQTAgg as FigureCanvas,
+    )
     from matplotlib.figure import Figure
 
     MPL_AVAILABLE = True
@@ -51,7 +53,9 @@ def load_dashboard_config() -> dict:
             return {**DEFAULT_CONFIG, **{k: bool(v) for k, v in data.items()}}
         except Exception:
             return DEFAULT_CONFIG.copy()
-    CONFIG_PATH.write_text(json.dumps(DEFAULT_CONFIG, indent=2, ensure_ascii=False))
+    CONFIG_PATH.write_text(
+        json.dumps(DEFAULT_CONFIG, indent=2, ensure_ascii=False)
+    )
     return DEFAULT_CONFIG.copy()
 
 
@@ -61,7 +65,12 @@ def save_dashboard_config(config: dict) -> None:
         json.dump(config, fh, ensure_ascii=False, indent=2)
 
 
-def build_summary_text(total: int, amount: float, avg: float, config: dict) -> str:
+def build_summary_text(
+    total: int,
+    amount: float,
+    avg: float,
+    config: dict,
+) -> str:
     """Return summary text based on *config*."""
     lines: list[str] = []
     if config.get("show_total_count", True):

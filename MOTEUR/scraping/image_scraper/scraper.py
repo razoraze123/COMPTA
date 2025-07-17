@@ -18,13 +18,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 from tqdm import tqdm
 
-from .driver_utils import setup_driver
+from .driver import setup_driver
 from .constants import (
     IMAGES_DEFAULT_SELECTOR as DEFAULT_CSS_SELECTOR,
     USER_AGENT,
 )
-from . import download_helpers as dl_helpers
-from . import rename_helpers
+from . import download as dl_helpers
+from . import rename as rename_helpers
 
 logger = logging.getLogger(__name__)
 

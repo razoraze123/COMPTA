@@ -21,10 +21,10 @@ except ModuleNotFoundError:
     print("Install dependencies with pip install -r requirements.txt")
     sys.exit(1)
 
-from MOTEUR.scraping.scraping_widget import ScrapingImagesWidget
+from MOTEUR.scraping.widgets.scraping_widget import ScrapingImagesWidget
 from MOTEUR.compta.achats.widget import AchatWidget
 from MOTEUR.compta.ventes.widget import VenteWidget
-from MOTEUR.scraping.profile_widget import ProfileWidget
+from MOTEUR.scraping.widgets.profile_widget import ProfileWidget
 from MOTEUR.compta.dashboard.widget import DashboardWidget
 import subprocess
 

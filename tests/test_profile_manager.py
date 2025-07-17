@@ -2,9 +2,9 @@ import json
 import logging
 from pathlib import Path
 
-from MOTEUR.scraping.profile_manager import ProfileManager
-from MOTEUR.scraping.constants import IMAGES_DEFAULT_SELECTOR
-from MOTEUR.scraping.scraping_widget import ScrapeWorker
+from MOTEUR.scraping.profiles.manager import ProfileManager
+from MOTEUR.scraping.image_scraper.constants import IMAGES_DEFAULT_SELECTOR
+from MOTEUR.scraping.widgets.scraping_widget import ScrapeWorker
 
 
 def _patch_download(monkeypatch):
@@ -15,7 +15,7 @@ def _patch_download(monkeypatch):
         return {}
 
     monkeypatch.setattr(
-        'MOTEUR.scraping.scraping_widget.download_images',
+        'MOTEUR.scraping.widgets.scraping_widget.download_images',
         fake_download,
     )
     return calls
@@ -70,7 +70,7 @@ def test_profile_css_used_in_scraper(monkeypatch, tmp_path: Path) -> None:
 
 def test_download_images_timeout_handled(monkeypatch, caplog) -> None:
     from selenium.common.exceptions import TimeoutException
-    from MOTEUR.scraping import image_scraper
+    from MOTEUR.scraping.image_scraper import scraper as image_scraper
 
     class DummyDriver:
         def execute_cdp_cmd(self, *a, **k):

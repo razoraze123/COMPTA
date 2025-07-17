@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal
 
-from .profile_manager import ProfileManager
+from ..profiles.manager import ProfileManager
 
 
 class ProfileWidget(QWidget):

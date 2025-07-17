@@ -83,7 +83,7 @@ désormais deux paramètres optionnels :
   Laisser `None` pour reproduire le comportement actuel sans limite.
 
 ```python
-from MOTEUR.scraping.driver_utils import setup_driver
+from MOTEUR.scraping.image_scraper.driver import setup_driver
 
 driver = setup_driver(window_size=(1280, 720), timeout=30)
 ```

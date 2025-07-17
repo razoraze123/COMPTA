@@ -20,9 +20,9 @@ from PySide6.QtWidgets import (
     QComboBox,
 )
 
-from .image_scraper import download_images
-from .constants import IMAGES_DEFAULT_SELECTOR
-from .profile_manager import ProfileManager
+from ..image_scraper.scraper import download_images
+from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
+from ..profiles.manager import ProfileManager
 
 
 class LogHandler(logging.Handler, QObject):

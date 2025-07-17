@@ -5,7 +5,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from .constants import IMAGES_DEFAULT_SELECTOR
+from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
 
 
 @dataclass

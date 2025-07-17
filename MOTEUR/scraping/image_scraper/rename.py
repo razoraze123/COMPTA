@@ -7,7 +7,7 @@ import re
 import unicodedata
 from pathlib import Path
 
-from .download_helpers import unique_path
+from .download import unique_path
 
 ALT_JSON_PATH = Path(__file__).with_name("product_sentences.json")
 USE_ALT_JSON = True

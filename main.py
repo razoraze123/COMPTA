@@ -188,6 +188,7 @@ class MainWindow(QMainWindow):
             "Résultat": BASE_DIR / "icons" / "resultat.svg",
             "Comptes": BASE_DIR / "icons" / "journal.svg",
             "Achat": BASE_DIR / "icons" / "achat.svg",
+            "Fournisseurs": BASE_DIR / "icons" / "achat.svg",
             "Ventes": BASE_DIR / "icons" / "ventes.svg",
         }
         for name in compta_icons:
@@ -202,6 +203,11 @@ class MainWindow(QMainWindow):
                 self.achat_btn = btn
                 btn.clicked.connect(
                     lambda _, b=btn: self.show_achat_page(b)
+                )
+            elif name == "Fournisseurs":
+                self.suppliers_btn = btn
+                btn.clicked.connect(
+                    lambda _, b=btn: self.show_suppliers_page(b)
                 )
             elif name == "Comptes":
                 self.accounts_btn = btn
@@ -312,6 +318,12 @@ class MainWindow(QMainWindow):
         self.achat_page = AchatWidget()
         self.stack.addWidget(self.achat_page)
 
+        # Page for suppliers
+        from MOTEUR.compta.suppliers import SupplierTab
+
+        self.suppliers_page = SupplierTab()
+        self.stack.addWidget(self.suppliers_page)
+
         # Page for account management
         self.accounts_page = AccountWidget()
         self.accounts_page.accounts_updated.connect(
@@ -394,6 +406,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.achat_page)
+
+    def show_suppliers_page(self, button: SidebarButton) -> None:
+        """Display the suppliers page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.suppliers_page)
 
     def show_ventes_page(self, button: SidebarButton) -> None:
         """Display the ventes page."""

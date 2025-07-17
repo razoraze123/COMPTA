@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
+import sqlite3
 
 from PySide6.QtCore import Qt, Slot, QDate
 from PySide6.QtGui import QKeySequence
@@ -190,7 +191,15 @@ class AchatWidget(QWidget):
                 sid = add_supplier(db_path, dlg.supplier_combo.currentText())
                 pur.supplier_id = sid
                 self.load_suppliers()
-            add_purchase(db_path, pur)
+            try:
+                add_purchase(db_path, pur)
+            except sqlite3.IntegrityError:
+                QMessageBox.warning(
+                    self,
+                    "Achat",
+                    "Référence déjà utilisée pour ce fournisseur",
+                )
+                return
             self.load_purchases()
             self.piece_edit.setText(self.get_next_inv())
             self.label_edit.clear()
@@ -238,7 +247,15 @@ class AchatWidget(QWidget):
             payment_status="A_PAYER",
             attachment_path=getattr(self, "attachment_path", None),
         )
-        add_purchase(db_path, pur)
+        try:
+            add_purchase(db_path, pur)
+        except sqlite3.IntegrityError:
+            QMessageBox.warning(
+                self,
+                "Achat",
+                "Référence déjà utilisée pour ce fournisseur",
+            )
+            return
         self.load_purchases()
         self.attachment_path = None
         self.piece_edit.setText(self.get_next_inv())
@@ -290,7 +307,15 @@ class AchatWidget(QWidget):
             payment_status="A_PAYER",
             attachment_path=getattr(self, "attachment_path", None),
         )
-        update_purchase(db_path, pur)
+        try:
+            update_purchase(db_path, pur)
+        except sqlite3.IntegrityError:
+            QMessageBox.warning(
+                self,
+                "Achat",
+                "Référence déjà utilisée pour ce fournisseur",
+            )
+            return
         self.load_purchases()
 
     @Slot()

@@ -10,7 +10,7 @@ SQL_CREATE_VIEW = """
 CREATE VIEW IF NOT EXISTS account_balance_v AS
 SELECT a.code                  AS account_code,
        a.name                  AS account_name,
-       ROUND(SUM(el.debit - el.credit),2) AS balance
+       ROUND(IFNULL(SUM(el.debit - el.credit), 0), 2) AS balance
 FROM   accounts a
 LEFT JOIN entry_lines el ON el.account = a.code
 GROUP BY a.code;

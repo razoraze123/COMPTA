@@ -5,6 +5,7 @@ from typing import List
 
 from ..db import connect
 from ..models import EntryLine
+from ..achats.signals import signals as achat_signals
 
 SQL_CREATE_SEQUENCES = """
 CREATE TABLE IF NOT EXISTS sequences (
@@ -151,6 +152,7 @@ def _create_entry(
             ),
         )
     _assert_balanced(conn, entry_id)
+    achat_signals.entry_changed.emit()
     return entry_id
 
 

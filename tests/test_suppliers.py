@@ -1,6 +1,18 @@
 from pathlib import Path
 
-from MOTEUR.compta.achats.db import init_db, add_purchase, pay_purchase
+import os
+from unittest.mock import MagicMock
+
+from PySide6.QtWidgets import QApplication
+
+from MOTEUR.compta.achats.db import (
+    init_db,
+    add_purchase,
+    pay_purchase,
+    add_supplier,
+)
+from MOTEUR.compta.achats.signals import signals
+from MOTEUR.compta.achats import widget as achat_widget
 from MOTEUR.compta.models import Purchase
 from MOTEUR.compta.db import connect
 from MOTEUR.compta.suppliers import (
@@ -43,3 +55,36 @@ def test_supplier_transactions_fetch(tmp_path: Path) -> None:
     rows = get_supplier_transactions(db, 1)
     assert [r.ref for r in rows] == ["INV1", "INV1", "INV2"]
     assert [r.balance for r in rows] == [-100.0, -50.0, -250.0]
+
+
+def test_auto_supplier_creation(tmp_path: Path) -> None:
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    app = QApplication.instance() or QApplication([])
+
+    db = tmp_path / "auto.db"
+    achat_widget.db_path = db
+    w = achat_widget.AchatWidget()
+
+    with connect(db) as conn:
+        conn.execute("INSERT INTO accounts (code, name) VALUES ('601','Achats')")
+        conn.commit()
+    w.load_expense_accounts()
+
+    w.supplier_combo.setEditText("New")
+    w.label_edit.setText("Test")
+    w.amount_spin.setValue(100.0)
+    w.vat_combo.setCurrentText("20")
+    w.account_combo.setCurrentIndex(0)
+    w.add_purchase()
+
+    balances = {name: bal for _, name, bal in get_suppliers_with_balance(db)}
+    assert round(balances["New"], 2) == -120.0
+
+
+def test_supplier_signal(tmp_path: Path) -> None:
+    db = tmp_path / "sig.db"
+    init_db(db)
+    called = MagicMock()
+    signals.supplier_changed.connect(called)
+    add_supplier(db, "Test")
+    assert called.called

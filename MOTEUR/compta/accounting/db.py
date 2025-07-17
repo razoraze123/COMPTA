@@ -56,6 +56,10 @@ SQL_IDX_ENTRIES_DATE = (
     "CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date)"
 )
 
+SQL_IDX_ENTRIES_REF = (
+    "CREATE INDEX IF NOT EXISTS idx_entries_ref ON entries(ref)"
+)
+
 SQL_FETCH_LINES = (
     "SELECT account, debit, credit FROM entry_lines WHERE entry_id=?"
 )
@@ -106,6 +110,7 @@ def init_db(db_path: Path | str) -> None:
         conn.execute(SQL_CREATE_LINES)
         conn.execute(SQL_CREATE_SEQUENCES)
         conn.execute(SQL_IDX_ENTRIES_DATE)
+        conn.execute(SQL_IDX_ENTRIES_REF)
         conn.commit()
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
-from PySide6.QtCore import QObject, Signal
+from .signals import signals
 
 from ..db import connect
 from ..models import EntryLine, Purchase, PurchaseFilter, VatLine
@@ -15,18 +15,17 @@ from ..accounting.db import (
 )
 
 
-class _AchatSignals(QObject):
-    supplier_changed = Signal()
-
-
-signals = _AchatSignals()
-
-
 def _ensure_account(conn, code: str) -> None:
     conn.execute(
         "INSERT OR IGNORE INTO accounts(code, name) VALUES (?, ?)",
         (code, ""),
     )
+
+
+def _insert_supplier(conn, name: str) -> int:
+    """Insert a supplier and return its id without emitting signals."""
+    cur = conn.execute("INSERT INTO suppliers(name) VALUES (?)", (name,))
+    return cur.lastrowid
 
 
 SQL_CREATE_SUPPLIERS = """

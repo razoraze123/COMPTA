@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
 )
 
-from ..achats.db import signals as achat_signals
+from MOTEUR.compta.achats.signals import signals as achat_signals
 from .supplier_services import (
     init_view,
     get_suppliers_with_balance,
@@ -62,7 +62,7 @@ class SupplierTab(QWidget):
             item.setData(Qt.UserRole, sid)
             self.table.setItem(row, 0, item)
             bal_item = QTableWidgetItem(f"{balance:.2f}")
-            color = Qt.red if balance < 0 else Qt.darkGreen
+            color = Qt.red if balance > 0 else Qt.darkGreen
             bal_item.setForeground(color)
             self.table.setItem(row, 1, bal_item)
 

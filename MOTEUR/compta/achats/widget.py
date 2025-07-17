@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import Qt, Slot, QDate
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -15,10 +16,13 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QPushButton,
+    QDialog,
     QTableWidget,
     QTableWidgetItem,
     QMessageBox,
 )
+
+from .purchase_dialog import PurchaseDialog
 
 from .db import (
     init_db,
@@ -94,9 +98,10 @@ class AchatWidget(QWidget):
         layout.addLayout(form_layout)
 
         btn_layout = QHBoxLayout()
-        self.add_btn = QPushButton("Ajouter")
-        self.add_btn.clicked.connect(self.add_purchase)
-        btn_layout.addWidget(self.add_btn)
+        self.saisir_btn = QPushButton("Saisir…")
+        self.saisir_btn.setShortcut(QKeySequence("Ctrl+N"))
+        self.saisir_btn.clicked.connect(self.open_dialog)
+        btn_layout.addWidget(self.saisir_btn)
         self.mod_btn = QPushButton("Modifier")
         self.mod_btn.clicked.connect(self.edit_purchase)
         btn_layout.addWidget(self.mod_btn)
@@ -140,9 +145,7 @@ class AchatWidget(QWidget):
     def load_expense_accounts(self) -> None:
         self.account_combo.clear()
         with connect(db_path) as conn:
-            cur = conn.execute(
-                "SELECT code, name FROM accounts WHERE code LIKE '60%'"
-            )
+            cur = conn.execute("SELECT code, name FROM accounts WHERE code LIKE '60%'")
             for code, name in cur.fetchall():
                 self.account_combo.addItem(f"{code} {name}", code)
 
@@ -159,6 +162,28 @@ class AchatWidget(QWidget):
         path, _ = QFileDialog.getOpenFileName(self, "Pièce")
         if path:
             self.attachment_path = path
+
+    @Slot()
+    def open_dialog(self) -> None:
+        suppliers = [
+            (self.supplier_combo.itemData(i), self.supplier_combo.itemText(i))
+            for i in range(self.supplier_combo.count())
+        ]
+        accounts = [
+            (self.account_combo.itemData(i), self.account_combo.itemText(i))
+            for i in range(self.account_combo.count())
+        ]
+        dlg = PurchaseDialog(suppliers, accounts, self.get_next_inv(), self)
+        if dlg.exec() == QDialog.Accepted:
+            pur = dlg.to_purchase()
+            add_purchase(db_path, pur)
+            self.load_purchases()
+            self.invoice_edit.setText(self.get_next_inv())
+            self.label_edit.clear()
+            self.amount_spin.setValue(0.0)
+            self.vat_combo.setCurrentIndex(0)
+            self.due_edit.setDate(QDate.currentDate().addDays(30))
+            self.attachment_path = None
 
     @Slot()
     def add_purchase(self) -> None:
@@ -253,10 +278,7 @@ class AchatWidget(QWidget):
             self.table.setItem(row, 0, item_date)
             self.table.setItem(row, 1, QTableWidgetItem(label))
             amt_item = QTableWidgetItem(f"{amount:.2f}")
-            if (
-                QDate.fromString(due, "yyyy-MM-dd") < today
-                and status == "A_PAYER"
-            ):
+            if QDate.fromString(due, "yyyy-MM-dd") < today and status == "A_PAYER":
                 for col in range(3):
                     self.table.item(row, col).setForeground(Qt.red)
             self.table.setItem(row, 2, amt_item)
@@ -267,9 +289,7 @@ class AchatWidget(QWidget):
         item_label = self.table.item(row, 1)
         item_amount = self.table.item(row, 2)
         if item_date and item_label and item_amount:
-            self.date_edit.setDate(
-                QDate.fromString(item_date.text(), "yyyy-MM-dd")
-            )
+            self.date_edit.setDate(QDate.fromString(item_date.text(), "yyyy-MM-dd"))
             self.label_edit.setText(item_label.text())
             self.amount_spin.setValue(float(item_amount.text()))
             # restore other fields from DB

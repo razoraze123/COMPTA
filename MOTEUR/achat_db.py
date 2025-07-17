@@ -295,4 +295,3 @@ def get_vat_summary(db_path: Path | str, start: str, end: str) -> List[VatLine]:
     with connect(db_path) as conn:
         cur = conn.execute(SQL_VAT_SUMMARY, (start, end))
         return [VatLine(rate=r[0], base=r[1], vat=r[2]) for r in cur.fetchall()]
-

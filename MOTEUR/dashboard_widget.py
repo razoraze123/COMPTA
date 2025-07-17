@@ -199,4 +199,3 @@ class DashboardWidget(QWidget):
         total, amount, avg, by_month = self._compute_metrics(rows)
         self._update_summary(total, amount, avg)
         self._update_chart(by_month)
-

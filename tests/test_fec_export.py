@@ -20,5 +20,3 @@ def test_export_fec_generates_file(tmp_path: Path) -> None:
         lines = fh.readlines()
     # header + 3 lines
     assert len(lines) == 4
-
-

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from MOTEUR.achat_db import init_db, add_purchase, pay_purchase, fetch_purchases, get_vat_summary
-from MOTEUR.models import Purchase, PurchaseFilter
+from MOTEUR.achat_db import init_db, add_purchase, pay_purchase, get_vat_summary
+from MOTEUR.models import Purchase
 from MOTEUR.db import connect
 from MOTEUR.accounting_db import entry_balanced
 
@@ -47,5 +47,3 @@ def test_payment_creates_entry(tmp_path: Path) -> None:
             ("INV1",),
         )
         assert cur.fetchone()[0] == 1
-
-

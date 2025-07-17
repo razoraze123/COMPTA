@@ -143,7 +143,3 @@ def export_fec(db_path: Path | str, year: int, dest: Path) -> None:
                     f"{desc or ref};{debit:.2f};{credit:.2f}\n"
                 )
                 line_num += 1
-
-
-
-

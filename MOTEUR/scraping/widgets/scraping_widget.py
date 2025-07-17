@@ -1,27 +1,25 @@
 from __future__ import annotations
 
+import logging
+from pathlib import Path
 from typing import Optional
 
-from pathlib import Path
-
-import logging
-
-from PySide6.QtCore import Slot, QObject, Signal, QThread, QUrl
+from PySide6.QtCore import QObject, QThread, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QComboBox,
+    QFileDialog,
     QHBoxLayout,
     QLineEdit,
+    QProgressBar,
     QPushButton,
     QTextEdit,
-    QFileDialog,
-    QProgressBar,
-    QComboBox,
+    QVBoxLayout,
+    QWidget,
 )
 
-from ..image_scraper.scraper import download_images
 from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
+from ..image_scraper.scraper import download_images
 from ..profiles.manager import ProfileManager
 
 
@@ -44,11 +42,14 @@ class ScrapeWorker(QThread):
     progress = Signal(int, int)
     finished = Signal(dict)
 
-    def __init__(self, url: str, css: str, folder: str) -> None:
+    def __init__(
+        self, url: str, css: str, folder: str, *, use_alt_json: bool = True
+    ) -> None:
         super().__init__()
         self.url = url
         self.css = css or IMAGES_DEFAULT_SELECTOR
         self.folder = folder
+        self.use_alt_json = use_alt_json
 
     def run(self) -> None:  # noqa: D401 - QThread API
         result = download_images(
@@ -56,6 +57,7 @@ class ScrapeWorker(QThread):
             css_selector=self.css,
             parent_dir=self.folder,
             progress_callback=lambda c, t: self.progress.emit(c, t),
+            use_alt_json=self.use_alt_json,
         )
         self.finished.emit(result)
 
@@ -83,9 +85,7 @@ class ScrapingImagesWidget(QWidget):
         # Input URL ------------------------------------------------------
         self.url_edit = QLineEdit()
         self.url_edit.setPlaceholderText("\ud83d\udcce Lien du site")
-        self.url_edit.setStyleSheet(
-            "padding: 8px; border-radius: 6px;"
-        )
+        self.url_edit.setStyleSheet("padding: 8px; border-radius: 6px;")
         main_layout.addWidget(self.url_edit)
 
         # Profile selector and destination folder -----------------------
@@ -211,7 +211,5 @@ class ScrapingImagesWidget(QWidget):
         self.scrape_folder = Path(result.get("folder", ""))
         self.console.append("✅ Terminé")
         if self.scrape_folder and self.scrape_folder.exists():
-            QDesktopServices.openUrl(
-                QUrl.fromLocalFile(str(self.scrape_folder))
-            )
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.scrape_folder)))
         self.start_btn.setEnabled(True)

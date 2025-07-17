@@ -3,33 +3,44 @@ from __future__ import annotations
 import base64
 import binascii
 import logging
+import mimetypes
 import os
 import re
 from pathlib import Path
 
 import requests
 
+
+class ImageDownloadError(RuntimeError):
+    """Raised when a binary or base64 download fails."""
+
+    pass
+
+
 from .constants import USER_AGENT
+from .utils import retry_on_stale
 
 logger = logging.getLogger(__name__)
 
 
-def download_binary(
-    url: str, path: Path, user_agent: str = USER_AGENT
-) -> None:
+def download_binary(url: str, path: Path, user_agent: str = USER_AGENT) -> Path:
     """Download binary content from *url* into *path* using *user_agent*."""
     headers = {"User-Agent": user_agent}
     try:
-        with requests.get(
-            url, headers=headers, stream=True, timeout=10
-        ) as resp:
+        with requests.get(url, headers=headers, stream=True, timeout=10) as resp:
             resp.raise_for_status()
-            with path.open("wb") as fh:
+            final_path = path
+            if not path.suffix:
+                ctype = resp.headers.get("Content-Type", "").split(";")[0]
+                ext = mimetypes.guess_extension(ctype) or ".bin"
+                final_path = path.with_suffix(ext)
+            with final_path.open("wb") as fh:
                 for chunk in resp.iter_content(chunk_size=8192):
                     if chunk:
                         fh.write(chunk)
+            return final_path
     except requests.exceptions.RequestException as exc:
-        raise RuntimeError(f"Failed to download {url}") from exc
+        raise ImageDownloadError(f"Failed to download {url}") from exc
 
 
 def save_base64(encoded: str, path: Path) -> None:
@@ -37,7 +48,7 @@ def save_base64(encoded: str, path: Path) -> None:
     try:
         data = base64.b64decode(encoded)
     except binascii.Error as exc:
-        raise RuntimeError("Invalid base64 image data") from exc
+        raise ImageDownloadError("Invalid base64 image data") from exc
     path.write_bytes(data)
 
 
@@ -53,13 +64,16 @@ def unique_path(folder: Path, filename: str, reserved: set[Path]) -> Path:
     return candidate
 
 
+@retry_on_stale()
 def handle_image(
     element, folder: Path, index: int, user_agent: str, reserved: set[Path]
-) -> tuple[Path, str | None]:
+) -> tuple[Path | None, str | None]:
     """Return target path and optional URL for *element* image."""
     src = (
         element.get_attribute("src")
         or element.get_attribute("data-src")
+        or element.get_attribute("currentSrc")
+        or element.get_attribute("srcset")
         or element.get_attribute("data-srcset")
     )
     if not src:
@@ -68,6 +82,13 @@ def handle_image(
     if " " in src and "," in src:
         candidates = [s.strip().split(" ")[0] for s in src.split(",")]
         src = candidates[-1]
+
+    width = int(element.get_attribute("naturalWidth") or 0)
+    height = int(element.get_attribute("naturalHeight") or 0)
+    if width and width < 200 or height and height < 200:
+        return None, None
+    if re.search(r"/(logo|icon|sprite)/", src):
+        return None, None
 
     logger.debug("Téléchargement de l'image : %s", src)
 

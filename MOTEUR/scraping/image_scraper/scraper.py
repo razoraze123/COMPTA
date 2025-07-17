@@ -12,19 +12,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable, Optional
 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
 from tqdm import tqdm
 
-from .driver import setup_driver
-from .constants import (
-    IMAGES_DEFAULT_SELECTOR as DEFAULT_CSS_SELECTOR,
-    USER_AGENT,
-)
 from . import download as dl_helpers
 from . import rename as rename_helpers
+from .constants import COMMON_SELECTORS
+from .constants import IMAGES_DEFAULT_SELECTOR as DEFAULT_CSS_SELECTOR
+from .constants import USER_AGENT
+from .driver import setup_driver
+from .utils import check_robots, exhaust_carousel
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +60,7 @@ def _find_product_name(driver) -> str:
     for by, value, attr in selectors:
         try:
             elem = driver.find_element(by, value)
-            text = (
-                elem.get_attribute(attr)
-                if attr
-                else getattr(elem, "text", "")
-            )
+            text = elem.get_attribute(attr) if attr else getattr(elem, "text", "")
             if text:
                 text = text.strip()
             if text:
@@ -84,9 +80,12 @@ def download_images(
     *,
     alt_json_path: str | Path | None = None,
     max_threads: int = 4,
+    carousel_selector: str | None = None,
 ) -> dict:
     """Download all images from *url* and return folder and first image."""
     reserved_paths: set[Path] = set()
+
+    check_robots(url)
 
     driver = setup_driver(window_size=(1920, 1080), timeout=None)
     driver.execute_cdp_cmd(
@@ -108,29 +107,46 @@ def download_images(
     warned_missing: set[str] = set()
 
     try:
-        logger.info("\U0001F30D Chargement de la page...")
+        logger.info("\U0001f30d Chargement de la page...")
         driver.get(url)
         try:
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, css_selector))
             )
         except TimeoutException:
-            logger.error(
-                "Timeout waiting for elements with selector %s", css_selector
-            )
+            logger.error("Timeout waiting for elements with selector %s", css_selector)
             return {"folder": folder, "first_image": first_image}
 
         product_name = _find_product_name(driver)
         folder = _safe_folder(product_name, parent_dir)
 
-        img_elements = driver.find_elements(By.CSS_SELECTOR, css_selector)
+        if carousel_selector:
+            try:
+                carousel_root = driver.find_element(By.CSS_SELECTOR, carousel_selector)
+                img_elements = exhaust_carousel(carousel_root)
+            except Exception as exc:
+                logger.warning("Carousel not found %s: %s", carousel_selector, exc)
+                img_elements = []
+        else:
+            img_elements = []
+
+        selectors_to_try = [css_selector] + COMMON_SELECTORS
+        chosen_selector = css_selector
+        for sel in selectors_to_try:
+            if img_elements:
+                break
+            elems = driver.find_elements(By.CSS_SELECTOR, sel)
+            if elems:
+                img_elements = elems
+                chosen_selector = sel
+        css_selector = chosen_selector
         logger.info(
-            f"\n\U0001F5BC {len(img_elements)} images trouvées avec le "
+            f"\n\U0001f5bc {len(img_elements)} images trouvées avec le "
             f"sélecteur : {css_selector}\n"
         )
 
         total = len(img_elements)
-        pbar = tqdm(range(total), desc="\U0001F53D Téléchargement des images")
+        pbar = tqdm(range(total), desc="\U0001f53d Téléchargement des images")
         pbar_update = getattr(pbar, "update", lambda n=1: None)
         pbar_close = getattr(pbar, "close", lambda: None)
         futures: dict = {}
@@ -142,6 +158,14 @@ def download_images(
                     path, url_to_download = dl_helpers.handle_image(
                         img, folder, idx, user_agent, reserved_paths
                     )
+                    if path is None:
+                        skipped += 1
+                        pbar_update(1)
+                        done_count += 1
+                        if progress_callback:
+                            progress_callback(done_count, total)
+                        continue
+
                     WebDriverWait(driver, 5).until(
                         lambda d: img.get_attribute("src")
                         or img.get_attribute("data-src")
@@ -168,13 +192,11 @@ def download_images(
                         )
                         futures[fut] = (idx, path)
                 except Exception as exc:
-                    logger.error(
-                        "\u274c Erreur pour l'image %s : %s", idx, exc
-                    )
+                    logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
             for fut in as_completed(futures):
-                idx, path = futures[fut]
+                idx, orig_path = futures[fut]
                 try:
-                    fut.result()
+                    path = fut.result()
                     if use_alt_json:
                         path = rename_helpers.rename_with_alt(
                             path, sentences, warned_missing, reserved_paths
@@ -183,9 +205,7 @@ def download_images(
                     if first_image is None:
                         first_image = path
                 except Exception as exc:
-                    logger.error(
-                        "\u274c Erreur pour l'image %s : %s", idx, exc
-                    )
+                    logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
                     skipped += 1
                 pbar_update(1)
                 done_count += 1
@@ -198,10 +218,10 @@ def download_images(
         driver.quit()
 
     logger.info("\n" + "-" * 50)
-    logger.info("\U0001F3AF Produit     : %s", product_name)
-    logger.info("\U0001F4E6 Dossier     : %s", folder)
+    logger.info("\U0001f3af Produit     : %s", product_name)
+    logger.info("\U0001f4e6 Dossier     : %s", folder)
     logger.info("\u2705 Téléchargées : %s", downloaded)
-    logger.info("\u27A1️ Ignorées     : %s", skipped)
+    logger.info("\u27a1️ Ignorées     : %s", skipped)
     logger.info("-" * 50)
 
     return {"folder": folder, "first_image": first_image}

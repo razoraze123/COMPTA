@@ -55,6 +55,12 @@ If running `python main.py` shows 'No module named PySide6', make sure you execu
 
 # Lancer l'application
 python main.py
+
+Lorsque vous ajoutez des comptes ou des profils depuis les pages
+"Comptes" ou "Profil Scraping", les autres onglets se mettent à jour
+immédiatement grâce aux signaux. Les profils sont reliés à la page
+"Scraping Images" par le signal `profiles_updated` ; il n'est donc plus
+nécessaire de relancer l'application pour voir les nouveaux profils.
 Modules prévus (roadmap)
  Interface de base avec sidebar
 

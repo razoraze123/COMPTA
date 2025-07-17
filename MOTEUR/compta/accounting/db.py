@@ -6,6 +6,15 @@ from typing import List
 from ..db import connect
 from ..models import EntryLine
 
+SQL_CREATE_SEQUENCES = """
+CREATE TABLE IF NOT EXISTS sequences (
+    journal TEXT NOT NULL,
+    fiscal_year INTEGER NOT NULL,
+    next_number INTEGER NOT NULL,
+    PRIMARY KEY (journal, fiscal_year)
+)
+"""
+
 SQL_CREATE_ACCOUNTS = """
 CREATE TABLE IF NOT EXISTS accounts (
     code TEXT PRIMARY KEY,
@@ -30,7 +39,8 @@ CREATE TABLE IF NOT EXISTS entry_lines (
     account TEXT NOT NULL,
     debit REAL NOT NULL DEFAULT 0 CHECK(debit>=0),
     credit REAL NOT NULL DEFAULT 0 CHECK(credit>=0),
-    description TEXT
+    description TEXT,
+    letter_code TEXT
 )"""
 
 SQL_INSERT_ENTRY = (
@@ -42,9 +52,50 @@ SQL_INSERT_LINE = (
     " VALUES (?,?,?,?,?)"
 )
 
+SQL_IDX_ENTRIES_DATE = (
+    "CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date)"
+)
+
 SQL_FETCH_LINES = (
     "SELECT account, debit, credit FROM entry_lines WHERE entry_id=?"
 )
+
+
+def _assert_balanced(conn, entry_id: int) -> None:
+    cur = conn.execute(SQL_FETCH_LINES, (entry_id,))
+    debit = credit = 0.0
+    for _, d, c in cur.fetchall():
+        debit += d
+        credit += c
+    if round(debit - credit, 2) != 0.0:
+        raise ValueError("Entry not balanced")
+
+
+def next_sequence(conn, journal: str, fiscal_year: int) -> str:
+    cur = conn.execute(
+        "SELECT next_number FROM sequences WHERE journal=? AND fiscal_year=?",
+        (journal, fiscal_year),
+    )
+    row = cur.fetchone()
+    if row is None:
+        next_num = 1
+        conn.execute(
+            (
+                "INSERT INTO sequences (journal, fiscal_year, next_number) "
+                "VALUES (?,?,?)"
+            ),
+            (journal, fiscal_year, 2),
+        )
+    else:
+        next_num = row[0]
+        conn.execute(
+            (
+                "UPDATE sequences SET next_number=? WHERE journal=? "
+                "AND fiscal_year=?"
+            ),
+            (next_num + 1, journal, fiscal_year),
+        )
+    return f"{journal}{str(fiscal_year)[-2:]}{next_num:05d}"
 
 
 def init_db(db_path: Path | str) -> None:
@@ -53,6 +104,8 @@ def init_db(db_path: Path | str) -> None:
         conn.execute(SQL_CREATE_ACCOUNTS)
         conn.execute(SQL_CREATE_ENTRIES)
         conn.execute(SQL_CREATE_LINES)
+        conn.execute(SQL_CREATE_SEQUENCES)
+        conn.execute(SQL_IDX_ENTRIES_DATE)
         conn.commit()
 
 
@@ -92,6 +145,7 @@ def _create_entry(
                 line.description,
             ),
         )
+    _assert_balanced(conn, entry_id)
     return entry_id
 
 
@@ -159,3 +213,19 @@ def export_fec(db_path: Path | str, year: int, dest: Path) -> None:
                     f"{desc or ref};{debit:.2f};{credit:.2f}\n"
                 )
                 line_num += 1
+
+
+def apply_letter(db_path: Path | str, code: str, entry_ids: list[int]) -> None:
+    """Assign *code* to lines belonging to *entry_ids*."""
+    if not entry_ids:
+        return
+    qmarks = ",".join("?" for _ in entry_ids)
+    with connect(db_path) as conn:
+        conn.execute(
+            (
+                "UPDATE entry_lines SET letter_code=? WHERE entry_id "
+                f"IN ({qmarks})"
+            ),
+            [code, *entry_ids],
+        )
+        conn.commit()

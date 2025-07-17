@@ -59,8 +59,8 @@ Modules prévus (roadmap)
  Interface de base avec sidebar
 
  Module de saisie comptable (journal, écritures, plan comptable)
- 
-  Ajout des onglets "Achat" et "Ventes" dans la section Comptabilité
+
+  Ajout des onglets "Achat", "Ventes" et "Comptes" dans la section Comptabilité
 
  Génération automatique du bilan et du compte de résultat
 

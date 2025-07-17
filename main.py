@@ -22,10 +22,10 @@ except ModuleNotFoundError:
     sys.exit(1)
 
 from MOTEUR.scraping.scraping_widget import ScrapingImagesWidget
-from MOTEUR.compta.achat_widget import AchatWidget
-from MOTEUR.compta.vente_widget import VenteWidget
+from MOTEUR.compta.achats.widget import AchatWidget
+from MOTEUR.compta.ventes.widget import VenteWidget
 from MOTEUR.scraping.profile_widget import ProfileWidget
-from MOTEUR.compta.dashboard_widget import DashboardWidget
+from MOTEUR.compta.dashboard.widget import DashboardWidget
 import subprocess
 
 BASE_DIR = Path(__file__).resolve().parent

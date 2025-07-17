@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from MOTEUR.compta.models import Purchase
-from MOTEUR.compta.achat_db import add_purchase, pay_purchase, init_db
+from MOTEUR.compta.achats.db import add_purchase, pay_purchase, init_db
 from MOTEUR.compta.db import connect
 
 DB = Path("demo.db")

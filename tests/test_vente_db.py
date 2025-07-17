@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from MOTEUR.compta.vente_db import (
+from MOTEUR.compta.ventes.db import (
     init_db,
     add_sale,
     update_sale,

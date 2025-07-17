@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
-from .db import connect
-from .models import EntryLine, Purchase, PurchaseFilter, VatLine
-from .accounting_db import _create_entry, init_db as init_accounting
+from ..db import connect
+from ..models import EntryLine, Purchase, PurchaseFilter, VatLine
+from ..accounting.db import _create_entry, init_db as init_accounting
 
 SQL_CREATE_SUPPLIERS = """
 CREATE TABLE IF NOT EXISTS suppliers (

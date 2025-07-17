@@ -42,7 +42,9 @@ SQL_INSERT_LINE = (
     " VALUES (?,?,?,?,?)"
 )
 
-SQL_FETCH_LINES = "SELECT account, debit, credit FROM entry_lines WHERE entry_id=?"
+SQL_FETCH_LINES = (
+    "SELECT account, debit, credit FROM entry_lines WHERE entry_id=?"
+)
 
 
 def init_db(db_path: Path | str) -> None:
@@ -82,7 +84,13 @@ def _create_entry(
     for line in lines:
         conn.execute(
             SQL_INSERT_LINE,
-            (entry_id, line.account, line.debit, line.credit, line.description),
+            (
+                entry_id,
+                line.account,
+                line.debit,
+                line.credit,
+                line.description,
+            ),
         )
     return entry_id
 
@@ -104,7 +112,10 @@ def close_fiscal_year(db_path: Path | str, year: int) -> None:
     # For demo purposes we only mark the year as closed in a table.
     with connect(db_path) as conn:
         conn.execute(
-            "CREATE TABLE IF NOT EXISTS closed_years (year INTEGER PRIMARY KEY)"
+            (
+                "CREATE TABLE IF NOT EXISTS closed_years "
+                "(year INTEGER PRIMARY KEY)"
+            )
         )
         conn.execute(
             "INSERT OR IGNORE INTO closed_years(year) VALUES (?)",
@@ -127,13 +138,18 @@ def export_fec(db_path: Path | str, year: int, dest: Path) -> None:
     with connect(db_path) as conn, dest.open("w", encoding="utf-8") as fh:
         fh.write(";".join(header) + "\n")
         cur = conn.execute(
-            "SELECT id, journal, ref, date FROM entries WHERE substr(date,1,4)=?",
+            (
+                "SELECT id, journal, ref, date FROM entries "
+                "WHERE substr(date,1,4)=?"
+            ),
             (str(year),),
         )
         for entry_id, journal, ref, date in cur.fetchall():
             lcur = conn.execute(
-                "SELECT account, debit, credit, description FROM entry_lines "
-                "WHERE entry_id=?",
+                (
+                    "SELECT account, debit, credit, description FROM "
+                    "entry_lines WHERE entry_id=?"
+                ),
                 (entry_id,),
             )
             line_num = 1

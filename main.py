@@ -94,15 +94,24 @@ class CollapsibleSection(QWidget):
 
         self.content_area = QWidget()
         self.content_area.setMaximumHeight(0)
-        self.content_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.content_area.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Fixed,
+        )
 
-        self.toggle_animation = QPropertyAnimation(self.content_area, b"maximumHeight")
+        self.toggle_animation = QPropertyAnimation(
+            self.content_area,
+            b"maximumHeight",
+        )
         self.toggle_animation.setDuration(200)
         self.toggle_animation.setStartValue(0)
         self.toggle_animation.setEndValue(0)
 
         self.toggle_button.clicked.connect(self.toggle)
-        if self.hide_title_when_collapsed and not self.toggle_button.isChecked():
+        if (
+            self.hide_title_when_collapsed
+            and not self.toggle_button.isChecked()
+        ):
             self.toggle_button.setText("")
 
         main_layout = QVBoxLayout(self)
@@ -119,7 +128,9 @@ class CollapsibleSection(QWidget):
         checked = self.toggle_button.isChecked()
         total_height = self.content_area.sizeHint().height()
         self.toggle_animation.setDirection(
-            QPropertyAnimation.Forward if checked else QPropertyAnimation.Backward
+            QPropertyAnimation.Forward
+            if checked
+            else QPropertyAnimation.Backward
         )
         self.toggle_animation.setEndValue(total_height if checked else 0)
         self.toggle_animation.start()
@@ -182,13 +193,19 @@ class MainWindow(QMainWindow):
             self.compta_buttons[name] = btn
             if name == "Tableau de bord":
                 self.dashboard_btn = btn
-                btn.clicked.connect(lambda _, b=btn: self.show_dashboard_page(b))
+                btn.clicked.connect(
+                    lambda _, b=btn: self.show_dashboard_page(b)
+                )
             elif name == "Achat":
                 self.achat_btn = btn
-                btn.clicked.connect(lambda _, b=btn: self.show_achat_page(b))
+                btn.clicked.connect(
+                    lambda _, b=btn: self.show_achat_page(b)
+                )
             elif name == "Ventes":
                 self.ventes_btn = btn
-                btn.clicked.connect(lambda _, b=btn: self.show_ventes_page(b))
+                btn.clicked.connect(
+                    lambda _, b=btn: self.show_ventes_page(b)
+                )
             else:
                 btn.clicked.connect(
                     lambda _, n=name, b=btn: self.display_content(
@@ -252,7 +269,9 @@ class MainWindow(QMainWindow):
 
         # ---------------- Central area -----------------
         self.stack = QStackedWidget()
-        self.stack.addWidget(QLabel("Bienvenue sur COMPTA", alignment=Qt.AlignCenter))
+        self.stack.addWidget(
+            QLabel("Bienvenue sur COMPTA", alignment=Qt.AlignCenter)
+        )
 
         # Page for scraping profiles
         self.profile_page = ProfileWidget()
@@ -290,11 +309,17 @@ class MainWindow(QMainWindow):
         # Settings page displayed when the bottom button is clicked
         self.settings_page = QWidget()
         settings_layout = QVBoxLayout(self.settings_page)
-        title_label = QLabel("Param\u00e8tres \u2013 Maintenance du projet")
+        title_label = QLabel(
+            "Param\u00e8tres \u2013 Maintenance du projet"
+        )
         title_label.setAlignment(Qt.AlignCenter)
-        update_button = QPushButton("\ud83d\udd04 Mettre \u00e0 jour depuis GitHub")
+        update_button = QPushButton(
+            "\ud83d\udd04 Mettre \u00e0 jour depuis GitHub"
+        )
         update_button.clicked.connect(self.update_from_github)
-        refresh_button = QPushButton("\ud83d\udd04 Red\u00e9marrer l'application")
+        refresh_button = QPushButton(
+            "\ud83d\udd04 Red\u00e9marrer l'application"
+        )
         refresh_button.clicked.connect(self.refresh_scraping)
         settings_layout.addStretch()
         settings_layout.addWidget(title_label)

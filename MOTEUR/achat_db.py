@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS purchases (
     vat_rate REAL NOT NULL CHECK(vat_rate IN (0,2.1,5.5,10,20)),
     account_code TEXT NOT NULL,
     due_date TEXT NOT NULL,
-    payment_status TEXT NOT NULL CHECK(payment_status IN ('A_PAYER','PAYE','PARTIEL')),
+    payment_status TEXT NOT NULL CHECK(
+        payment_status IN ('A_PAYER','PAYE','PARTIEL')
+    ),
     payment_date TEXT,
     payment_method TEXT,
     is_advance INTEGER DEFAULT 0 CHECK(is_advance IN (0,1)),
@@ -107,9 +109,15 @@ def add_purchase(db_path: Path | str, pur: Purchase) -> int:
             if pur.is_advance
             else ("408" if not pur.is_invoice_received else "401")
         )
-        vat_account = "44562" if pur.account_code.startswith("2") else "44566"
+        vat_account = (
+            "44562" if pur.account_code.startswith("2") else "44566"
+        )
         lines = [
-            EntryLine(account=pur.account_code, debit=pur.ht_amount, credit=0.0),
+            EntryLine(
+                account=pur.account_code,
+                debit=pur.ht_amount,
+                credit=0.0,
+            ),
             EntryLine(account=vat_account, debit=pur.vat_amount, credit=0.0),
             EntryLine(
                 account=credit_account,
@@ -162,16 +170,28 @@ def update_purchase(db_path: Path | str, pur: Purchase) -> None:
         row = cur.fetchone()
         if row:
             entry_id = row[0]
-            conn.execute("DELETE FROM entry_lines WHERE entry_id=?", (entry_id,))
-            conn.execute("DELETE FROM entries WHERE id=?", (entry_id,))
+            conn.execute(
+                "DELETE FROM entry_lines WHERE entry_id=?",
+                (entry_id,),
+            )
+            conn.execute(
+                "DELETE FROM entries WHERE id=?",
+                (entry_id,),
+            )
         credit_account = (
             "4091"
             if pur.is_advance
             else ("408" if not pur.is_invoice_received else "401")
         )
-        vat_account = "44562" if pur.account_code.startswith("2") else "44566"
+        vat_account = (
+            "44562" if pur.account_code.startswith("2") else "44566"
+        )
         lines = [
-            EntryLine(account=pur.account_code, debit=pur.ht_amount, credit=0.0),
+            EntryLine(
+                account=pur.account_code,
+                debit=pur.ht_amount,
+                credit=0.0,
+            ),
             EntryLine(account=vat_account, debit=pur.vat_amount, credit=0.0),
             EntryLine(
                 account=credit_account,
@@ -200,7 +220,10 @@ def pay_purchase(
     """Register a payment entry for the purchase."""
     with connect(db_path) as conn:
         cur = conn.execute(
-            "SELECT ht_amount, vat_amount, invoice_number, payment_status FROM purchases WHERE id=?",
+            (
+                "SELECT ht_amount, vat_amount, invoice_number, payment_status "
+                "FROM purchases WHERE id=?"
+            ),
             (purchase_id,),
         )
         row = cur.fetchone()
@@ -209,7 +232,10 @@ def pay_purchase(
         total = row[0] + row[1]
         status = "PAYE" if amount >= total else "PARTIEL"
         conn.execute(
-            "UPDATE purchases SET payment_status=?, payment_date=?, payment_method=? WHERE id=?",
+            (
+                "UPDATE purchases SET payment_status=?, payment_date=?, "
+                "payment_method=? WHERE id=?"
+            ),
             (
                 status,
                 payment_date,
@@ -244,7 +270,10 @@ def delete_purchase(db_path: Path | str, purchase_id: int) -> None:
             raise ValueError("Invalid purchase id")
         invoice = row[0]
 
-        conn.execute("DELETE FROM purchases WHERE id=?", (purchase_id,))
+        conn.execute(
+            "DELETE FROM purchases WHERE id=?",
+            (purchase_id,),
+        )
 
         cur = conn.execute(
             "SELECT id FROM entries WHERE journal='ACH' AND ref=?",
@@ -253,12 +282,21 @@ def delete_purchase(db_path: Path | str, purchase_id: int) -> None:
         row = cur.fetchone()
         if row:
             entry_id = row[0]
-            conn.execute("DELETE FROM entry_lines WHERE entry_id=?", (entry_id,))
-            conn.execute("DELETE FROM entries WHERE id=?", (entry_id,))
+            conn.execute(
+                "DELETE FROM entry_lines WHERE entry_id=?",
+                (entry_id,),
+            )
+            conn.execute(
+                "DELETE FROM entries WHERE id=?",
+                (entry_id,),
+            )
         conn.commit()
 
 
-def fetch_purchases(db_path: Path | str, flt: PurchaseFilter) -> List[Purchase]:
+def fetch_purchases(
+    db_path: Path | str,
+    flt: PurchaseFilter,
+) -> List[Purchase]:
     """Return purchases filtered according to *flt*."""
     query = "SELECT * FROM purchases WHERE 1=1"
     params: List = []
@@ -285,13 +323,26 @@ def fetch_all_purchases(db_path: Path | str):
     """Return purchases as (id, date, label, ttc)."""
     with connect(db_path) as conn:
         cur = conn.execute(
-            "SELECT id, date, label, ht_amount + vat_amount as ttc FROM purchases ORDER BY date"
+            (
+                "SELECT id, date, label, ht_amount + vat_amount as ttc "
+                "FROM purchases ORDER BY date"
+            )
         )
-        return [(r["id"], r["date"], r["label"], r["ttc"]) for r in cur.fetchall()]
+        return [
+            (r["id"], r["date"], r["label"], r["ttc"])
+            for r in cur.fetchall()
+        ]
 
 
-def get_vat_summary(db_path: Path | str, start: str, end: str) -> List[VatLine]:
+def get_vat_summary(
+    db_path: Path | str,
+    start: str,
+    end: str,
+) -> List[VatLine]:
     """Return VAT summary per rate between *start* and *end*."""
     with connect(db_path) as conn:
         cur = conn.execute(SQL_VAT_SUMMARY, (start, end))
-        return [VatLine(rate=r[0], base=r[1], vat=r[2]) for r in cur.fetchall()]
+        return [
+            VatLine(rate=r[0], base=r[1], vat=r[2])
+            for r in cur.fetchall()
+        ]

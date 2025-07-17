@@ -3,13 +3,23 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
+from PySide6.QtCore import QObject, Signal
+
 from ..db import connect
 from ..models import EntryLine, Purchase, PurchaseFilter, VatLine
+
 from ..accounting.db import (
     _create_entry,
     init_db as init_accounting,
     next_sequence,
 )
+
+
+class _AchatSignals(QObject):
+    supplier_changed = Signal()
+
+
+signals = _AchatSignals()
 
 
 def _ensure_account(conn, code: str) -> None:
@@ -138,6 +148,7 @@ def add_supplier(
             (name, vat_number, address),
         )
         conn.commit()
+        signals.supplier_changed.emit()
         return cur.lastrowid
 
 
@@ -207,6 +218,7 @@ def add_purchase(db_path: Path | str, pur: Purchase) -> int:
                 lines,
             )
             conn.commit()
+            signals.supplier_changed.emit()
             return pur.id
         except Exception:
             conn.rollback()
@@ -296,6 +308,7 @@ def update_purchase(db_path: Path | str, pur: Purchase) -> None:
                 lines,
             )
             conn.commit()
+            signals.supplier_changed.emit()
         except Exception:
             conn.rollback()
             raise
@@ -361,6 +374,7 @@ def pay_purchase(
                 lines,
             )
             conn.commit()
+            signals.supplier_changed.emit()
         except Exception:
             conn.rollback()
             raise
@@ -401,6 +415,7 @@ def delete_purchase(db_path: Path | str, purchase_id: int) -> None:
                     (entry_id,),
                 )
             conn.commit()
+            signals.supplier_changed.emit()
         except Exception:
             conn.rollback()
             raise

@@ -13,7 +13,7 @@ SELECT s.id      AS supplier_id,
        ROUND(SUM(CASE WHEN el.debit>0 THEN el.debit ELSE -el.credit END),2) AS balance
 FROM suppliers s
 LEFT JOIN entries   e   ON e.ref IN (
-      SELECT invoice_number FROM purchases WHERE supplier_id = s.id)
+      SELECT piece FROM purchases WHERE supplier_id = s.id)
 LEFT JOIN entry_lines el ON el.entry_id = e.id
 WHERE el.account IN ('401','408','4091')
 GROUP BY s.id;
@@ -55,7 +55,7 @@ def get_supplier_transactions(db_path: Path | str, supplier_id: int) -> List[Tra
         "SELECT e.date, e.journal, e.ref, e.memo, el.debit, el.credit "
         "FROM entries e JOIN entry_lines el ON el.entry_id=e.id "
         "WHERE el.account IN ('401','408','4091') "
-        "AND e.ref IN (SELECT invoice_number FROM purchases WHERE supplier_id=?) "
+        "AND e.ref IN (SELECT piece FROM purchases WHERE supplier_id=?) "
         "ORDER BY e.date, e.id"
     )
     with connect(db_path) as conn:

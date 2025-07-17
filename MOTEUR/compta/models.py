@@ -16,15 +16,21 @@ class Supplier:
 
 @dataclass
 class Purchase:
-    """Purchase record."""
+    """Purchase record.
+
+    The model originally stored the HT and VAT amounts as well as an
+    ``invoice_number``.  The revamped UI now works with the total amount
+    including VAT (TTC) and an internal reference called ``piece``.
+    ``ht_amount`` and ``vat_amount`` are therefore computed when needed and are
+    no longer part of the public API.
+    """
 
     id: Optional[int]
     date: str
-    invoice_number: str
+    piece: str
     supplier_id: int
     label: str
-    ht_amount: float
-    vat_amount: float
+    ttc_amount: float
     vat_rate: float
     account_code: str
     due_date: str

@@ -12,7 +12,7 @@ def test_balance_view_updated_on_new_entry(tmp_path: Path) -> None:
     with connect(db) as conn:
         conn.execute("INSERT INTO suppliers (name) VALUES ('Test')")
         conn.commit()
-    pur = Purchase(None, "2025-01-01", "INV1", 1, "Test", 100.0, 0.0, 0, "606300", "2025-02-01", "A_PAYER")
+    pur = Purchase(None, "2025-01-01", "INV1", 1, "Test", 100.0, 0, "606300", "2025-02-01", "A_PAYER")
     add_purchase(db, pur)
     balances = {code: bal for code, _, bal in get_accounts_with_balance(db)}
     assert balances["606300"] > 0
@@ -24,8 +24,8 @@ def test_transactions_dialog_rows(tmp_path: Path) -> None:
     with connect(db) as conn:
         conn.execute("INSERT INTO suppliers (name) VALUES ('Test')")
         conn.commit()
-    p1 = Purchase(None, "2025-01-01", "INV1", 1, "Un", 100.0, 0.0, 0, "606300", "2025-02-01", "A_PAYER")
-    p2 = Purchase(None, "2025-01-02", "INV2", 1, "Deux", 50.0, 0.0, 0, "606300", "2025-03-01", "A_PAYER")
+    p1 = Purchase(None, "2025-01-01", "INV1", 1, "Un", 100.0, 0, "606300", "2025-02-01", "A_PAYER")
+    p2 = Purchase(None, "2025-01-02", "INV2", 1, "Deux", 50.0, 0, "606300", "2025-03-01", "A_PAYER")
     add_purchase(db, p1)
     add_purchase(db, p2)
     rows = get_account_transactions(db, "606300")

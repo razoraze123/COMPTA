@@ -296,3 +296,39 @@ def fetch_accounts(db_path: Path | str, prefix: str | None = None):
             )
         rows = cur.fetchall()
         return [(r[0], r[1]) for r in rows]
+
+
+def add_journal(db_path: Path | str, code: str, name: str) -> None:
+    """Insert or replace a journal."""
+    with connect(db_path) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO journals(code, name) VALUES (?, ?)",
+            (code, name),
+        )
+        conn.commit()
+
+
+def update_journal(db_path: Path | str, code: str, name: str) -> None:
+    """Update the *name* of a journal."""
+    with connect(db_path) as conn:
+        conn.execute(
+            "UPDATE journals SET name=? WHERE code=?",
+            (name, code),
+        )
+        conn.commit()
+
+
+def delete_journal(db_path: Path | str, code: str) -> None:
+    """Delete journal with *code*."""
+    with connect(db_path) as conn:
+        conn.execute("DELETE FROM journals WHERE code=?", (code,))
+        conn.commit()
+
+
+def fetch_journals(db_path: Path | str):
+    """Return list of journals as (code, name)."""
+    with connect(db_path) as conn:
+        cur = conn.execute(
+            "SELECT code, name FROM journals ORDER BY code"
+        )
+        return [(r[0], r[1]) for r in cur.fetchall()]

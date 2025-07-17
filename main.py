@@ -188,6 +188,7 @@ class MainWindow(QMainWindow):
             "Résultat": BASE_DIR / "icons" / "resultat.svg",
             "Comptes": BASE_DIR / "icons" / "journal.svg",
             "Révision": BASE_DIR / "icons" / "bilan.svg",
+            "Paramètres": BASE_DIR / "icons" / "settings.svg",
             "Achat": BASE_DIR / "icons" / "achat.svg",
             "Fournisseurs": BASE_DIR / "icons" / "achat.svg",
             "Ventes": BASE_DIR / "icons" / "ventes.svg",
@@ -219,6 +220,11 @@ class MainWindow(QMainWindow):
                 self.revision_btn = btn
                 btn.clicked.connect(
                     lambda _, b=btn: self.show_revision_page(b)
+                )
+            elif name == "Paramètres":
+                self.param_journals_btn = btn
+                btn.clicked.connect(
+                    lambda _, b=btn: self.show_journals_page(b)
                 )
             elif name == "Ventes":
                 self.ventes_btn = btn
@@ -337,6 +343,11 @@ class MainWindow(QMainWindow):
         )
         self.stack.addWidget(self.accounts_page)
 
+        from MOTEUR.compta.parameters import JournalsWidget
+
+        self.journals_page = JournalsWidget()
+        self.stack.addWidget(self.journals_page)
+
         from MOTEUR.compta.revision import RevisionTab
 
         self.revision_page = RevisionTab()
@@ -417,6 +428,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.revision_page)
+
+    def show_journals_page(self, button: SidebarButton) -> None:
+        """Display the journals management page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.journals_page)
 
     def show_achat_page(self, button: SidebarButton) -> None:
         """Display the achat page."""

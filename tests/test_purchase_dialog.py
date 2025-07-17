@@ -9,7 +9,8 @@ def test_purchase_dialog_to_purchase():
     app = QApplication.instance() or QApplication([])
     suppliers = [(1, "Supplier")]
     accounts = [("601", "601 Achat")]
-    dlg = PieceDialog(suppliers, accounts, "PIECE1")
+    journals = [("AC", "Achat")]
+    dlg = PieceDialog(suppliers, accounts, journals, "PIECE1")
 
     dlg.date_edit.setDate(QDate(2025, 1, 1))
     dlg.supplier_combo.setCurrentIndex(0)

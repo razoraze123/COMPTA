@@ -35,7 +35,7 @@ from .db import (
 )
 from .signals import signals
 from ..models import Purchase
-from ..accounting.db import next_sequence
+from ..accounting.db import next_sequence, fetch_journals
 from ..db import connect
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -182,7 +182,8 @@ class AchatWidget(QWidget):
             (self.account_combo.itemData(i), self.account_combo.itemText(i))
             for i in range(self.account_combo.count())
         ]
-        dlg = PieceDialog(suppliers, accounts, self.get_next_inv(), self)
+        journals = fetch_journals(db_path)
+        dlg = PieceDialog(suppliers, accounts, journals, self.get_next_inv(), self)
         if dlg.exec() == QDialog.Accepted:
             pur = dlg.to_purchase()
             if pur.supplier_id is None:

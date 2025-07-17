@@ -125,6 +125,22 @@ def init_db(db_path: Path | str) -> None:
         conn.commit()
 
 
+def add_supplier(
+    db_path: Path | str,
+    name: str,
+    vat_number: str | None = None,
+    address: str | None = None,
+) -> int:
+    """Insert a supplier and return its id."""
+    with connect(db_path) as conn:
+        cur = conn.execute(
+            "INSERT INTO suppliers (name, vat_number, address) VALUES (?,?,?)",
+            (name, vat_number, address),
+        )
+        conn.commit()
+        return cur.lastrowid
+
+
 def add_purchase(db_path: Path | str, pur: Purchase) -> int:
     """Insert *pur* and generate accounting entry."""
     vat = round(pur.ht_amount * pur.vat_rate / 100, 2)

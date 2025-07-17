@@ -27,6 +27,7 @@ from .purchase_dialog import PurchaseDialog
 from .db import (
     init_db,
     add_purchase,
+    add_supplier,
     update_purchase,
     delete_purchase,
     fetch_all_purchases,
@@ -57,6 +58,7 @@ class AchatWidget(QWidget):
 
         form_layout.addWidget(QLabel("Fournisseur:"))
         self.supplier_combo = QComboBox()
+        self.supplier_combo.setEditable(True)
         self.load_suppliers()
         form_layout.addWidget(self.supplier_combo)
 
@@ -79,6 +81,7 @@ class AchatWidget(QWidget):
         self.vat_combo = QComboBox()
         for r in [0, 2.1, 5.5, 10, 20]:
             self.vat_combo.addItem(str(r))
+        self.vat_combo.setCurrentText("20")
         form_layout.addWidget(self.vat_combo)
 
         form_layout.addWidget(QLabel("Compte 6xx:"))
@@ -142,10 +145,24 @@ class AchatWidget(QWidget):
             for sid, name in conn.execute("SELECT id, name FROM suppliers"):
                 self.supplier_combo.addItem(name, sid)
 
+    def _get_supplier_id(self) -> int | None:
+        sid = self.supplier_combo.currentData()
+        if sid is not None:
+            return sid
+        name = self.supplier_combo.currentText().strip()
+        if not name:
+            return None
+        sid = add_supplier(db_path, name)
+        self.load_suppliers()
+        idx = self.supplier_combo.findData(sid)
+        if idx >= 0:
+            self.supplier_combo.setCurrentIndex(idx)
+        return sid
+
     def load_expense_accounts(self) -> None:
         self.account_combo.clear()
         with connect(db_path) as conn:
-            cur = conn.execute("SELECT code, name FROM accounts WHERE code LIKE '60%'")
+            cur = conn.execute("SELECT code, name FROM accounts WHERE code LIKE '6%'")
             for code, name in cur.fetchall():
                 self.account_combo.addItem(f"{code} {name}", code)
 
@@ -176,12 +193,16 @@ class AchatWidget(QWidget):
         dlg = PurchaseDialog(suppliers, accounts, self.get_next_inv(), self)
         if dlg.exec() == QDialog.Accepted:
             pur = dlg.to_purchase()
+            if pur.supplier_id is None:
+                sid = add_supplier(db_path, dlg.supplier_combo.currentText())
+                pur.supplier_id = sid
+                self.load_suppliers()
             add_purchase(db_path, pur)
             self.load_purchases()
             self.invoice_edit.setText(self.get_next_inv())
             self.label_edit.clear()
             self.amount_spin.setValue(0.0)
-            self.vat_combo.setCurrentIndex(0)
+            self.vat_combo.setCurrentText("20")
             self.due_edit.setDate(QDate.currentDate().addDays(30))
             self.attachment_path = None
 
@@ -197,11 +218,15 @@ class AchatWidget(QWidget):
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
+        supplier_id = self._get_supplier_id()
+        if supplier_id is None:
+            QMessageBox.warning(self, "Achat", "Fournisseur manquant")
+            return
         pur = Purchase(
             id=None,
             date=date,
             invoice_number=self.invoice_edit.text() or "AUTO",
-            supplier_id=self.supplier_combo.currentData(),
+            supplier_id=supplier_id,
             label=label,
             ht_amount=amount,
             vat_amount=0.0,
@@ -234,11 +259,15 @@ class AchatWidget(QWidget):
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
+        supplier_id = self._get_supplier_id()
+        if supplier_id is None:
+            QMessageBox.warning(self, "Achat", "Fournisseur manquant")
+            return
         pur = Purchase(
             id=purchase_id,
             date=date,
             invoice_number=self.invoice_edit.text() or "AUTO",
-            supplier_id=self.supplier_combo.currentData(),
+            supplier_id=supplier_id,
             label=label,
             ht_amount=amount,
             vat_amount=0.0,

@@ -805,6 +805,7 @@ class AchatWidget(QWidget):
 
         form_layout.addWidget(QLabel("Fournisseur:"))
         self.supplier_combo = QComboBox()
+        self.supplier_combo.setEditable(True)
         self.load_suppliers()
         form_layout.addWidget(self.supplier_combo)
 
@@ -827,6 +828,7 @@ class AchatWidget(QWidget):
         self.vat_combo = QComboBox()
         for r in [0, 2.1, 5.5, 10, 20]:
             self.vat_combo.addItem(str(r))
+        self.vat_combo.setCurrentText("20")
         form_layout.addWidget(self.vat_combo)
 
         form_layout.addWidget(QLabel("Compte 6xx:"))
@@ -893,7 +895,7 @@ class AchatWidget(QWidget):
         self.account_combo.clear()
         with connect(db_path) as conn:
             cur = conn.execute(
-                "SELECT code, name FROM accounts WHERE code LIKE '60%'"
+                "SELECT code, name FROM accounts WHERE code LIKE '6%'"
             )
             for code, name in cur.fetchall():
                 self.account_combo.addItem(f"{code} {name}", code)

@@ -45,6 +45,7 @@ class PurchaseDialog(QDialog):
         form.addRow("Date", self.date_edit)
 
         self.supplier_combo = QComboBox()
+        self.supplier_combo.setEditable(True)
         for sid, name in suppliers:
             self.supplier_combo.addItem(name, sid)
         form.addRow("Fournisseur", self.supplier_combo)
@@ -63,6 +64,7 @@ class PurchaseDialog(QDialog):
         self.vat_combo = QComboBox()
         for rate in [0, 2.1, 5.5, 10, 20]:
             self.vat_combo.addItem(str(rate))
+        self.vat_combo.setCurrentText("20")
         form.addRow("Taux TVA", self.vat_combo)
 
         self.account_combo = QComboBox()
@@ -106,8 +108,8 @@ class PurchaseDialog(QDialog):
         if not self.label_edit.text().strip():
             QMessageBox.warning(self, "Achat", "Libellé manquant")
             return
-        if self.supplier_combo.currentData() is None:
-            QMessageBox.warning(self, "Achat", "Sélectionnez un fournisseur")
+        if not self.supplier_combo.currentText().strip():
+            QMessageBox.warning(self, "Achat", "Fournisseur manquant")
             return
         if self.ht_spin.value() <= 0:
             QMessageBox.warning(self, "Achat", "Montant HT invalide")

@@ -11,6 +11,7 @@
 - 🖥️ **Construire une interface visuelle claire, modulaire et moderne**
 - 🔍 **Intégrer un module de scraping** pour automatiser des traitements de données
 - 📁 **Préparer les exports PDF, Excel, CSV des écritures**
+- 🧮 **Afficher la balance générale dynamique via l'onglet Révision**
 
 ---
 

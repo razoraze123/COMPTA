@@ -18,22 +18,21 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from MOTEUR.achat_db import (
+from .vente_db import (
     init_db,
-    add_purchase,
-    update_purchase,
-    delete_purchase,
-    fetch_all_purchases,
+    add_sale,
+    update_sale,
+    delete_sale,
+    fetch_all_sales,
 )
-from MOTEUR.models import Purchase
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Default path to the SQLite database
 db_path = BASE_DIR / "compta.db"
 
 
-class AchatWidget(QWidget):
-    """Widget pour la gestion des achats."""
+class VenteWidget(QWidget):
+    """Widget pour la gestion des ventes."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -61,13 +60,13 @@ class AchatWidget(QWidget):
 
         btn_layout = QHBoxLayout()
         self.add_btn = QPushButton("Ajouter")
-        self.add_btn.clicked.connect(self.add_purchase)
+        self.add_btn.clicked.connect(self.add_sale)
         btn_layout.addWidget(self.add_btn)
         self.mod_btn = QPushButton("Modifier")
-        self.mod_btn.clicked.connect(self.edit_purchase)
+        self.mod_btn.clicked.connect(self.edit_sale)
         btn_layout.addWidget(self.mod_btn)
         self.del_btn = QPushButton("Supprimer")
-        self.del_btn.clicked.connect(self.remove_purchase)
+        self.del_btn.clicked.connect(self.remove_sale)
         btn_layout.addWidget(self.del_btn)
         layout.addLayout(btn_layout)
 
@@ -83,7 +82,7 @@ class AchatWidget(QWidget):
         self.table.cellClicked.connect(self.fill_fields_from_row)
         layout.addWidget(self.table)
 
-        self.load_purchases()
+        self.load_sales()
 
     def get_selected_id(self) -> int | None:
         row = self.table.currentRow()
@@ -95,87 +94,61 @@ class AchatWidget(QWidget):
         return item.data(Qt.UserRole)
 
     @Slot()
-    def add_purchase(self) -> None:
+    def add_sale(self) -> None:
         label = self.label_edit.text().strip()
         if not label:
             QMessageBox.warning(
                 self,
-                "Achat",
+                "Vente",
                 "Veuillez saisir un libell\u00e9",
             )
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
-        pur = Purchase(
-            id=None,
-            date=date,
-            invoice_number="AUTO",
-            supplier_id=1,
-            label=label,
-            ht_amount=amount,
-            vat_amount=0.0,
-            vat_rate=20.0,
-            account_code="601",
-            due_date=date,
-            payment_status="A_PAYER",
-        )
-        add_purchase(db_path, pur)
-        self.load_purchases()
+        add_sale(db_path, date, label, amount)
+        self.load_sales()
 
     @Slot()
-    def edit_purchase(self) -> None:
-        purchase_id = self.get_selected_id()
-        if purchase_id is None:
+    def edit_sale(self) -> None:
+        sale_id = self.get_selected_id()
+        if sale_id is None:
             QMessageBox.warning(
                 self,
-                "Achat",
-                "S\u00e9lectionnez un achat",
+                "Vente",
+                "S\u00e9lectionnez une vente",
             )
             return
         label = self.label_edit.text().strip()
         if not label:
             QMessageBox.warning(
                 self,
-                "Achat",
+                "Vente",
                 "Veuillez saisir un libell\u00e9",
             )
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
-        pur = Purchase(
-            id=purchase_id,
-            date=date,
-            invoice_number="AUTO",
-            supplier_id=1,
-            label=label,
-            ht_amount=amount,
-            vat_amount=0.0,
-            vat_rate=20.0,
-            account_code="601",
-            due_date=date,
-            payment_status="A_PAYER",
-        )
-        update_purchase(db_path, pur)
-        self.load_purchases()
+        update_sale(db_path, sale_id, date, label, amount)
+        self.load_sales()
 
     @Slot()
-    def remove_purchase(self) -> None:
-        purchase_id = self.get_selected_id()
-        if purchase_id is None:
-            QMessageBox.warning(self, "Achat", "S\u00e9lectionnez un achat")
+    def remove_sale(self) -> None:
+        sale_id = self.get_selected_id()
+        if sale_id is None:
+            QMessageBox.warning(self, "Vente", "S\u00e9lectionnez une vente")
             return
-        delete_purchase(db_path, purchase_id)
-        self.load_purchases()
+        delete_sale(db_path, sale_id)
+        self.load_sales()
 
-    def load_purchases(self) -> None:
+    def load_sales(self) -> None:
         self.table.setRowCount(0)
-        for purchase_id, date, label, amount in fetch_all_purchases(
+        for sale_id, date, label, amount in fetch_all_sales(
             db_path
         ):
             row = self.table.rowCount()
             self.table.insertRow(row)
             item_date = QTableWidgetItem(date)
-            item_date.setData(Qt.UserRole, purchase_id)
+            item_date.setData(Qt.UserRole, sale_id)
             self.table.setItem(row, 0, item_date)
             self.table.setItem(row, 1, QTableWidgetItem(label))
             self.table.setItem(row, 2, QTableWidgetItem(f"{amount:.2f}"))

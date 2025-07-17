@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from MOTEUR.achat_db import (
+from MOTEUR.compta.achat_db import (
     init_db,
     add_purchase,
     pay_purchase,
     get_vat_summary,
 )
-from MOTEUR.models import Purchase
-from MOTEUR.db import connect
-from MOTEUR.accounting_db import entry_balanced
+from MOTEUR.compta.models import Purchase
+from MOTEUR.compta.db import connect
+from MOTEUR.compta.accounting_db import entry_balanced
 
 
 def test_purchase_entry_balanced(tmp_path: Path) -> None:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from MOTEUR.scraping.profile_manager import ProfileManager
 from MOTEUR.scraping.constants import IMAGES_DEFAULT_SELECTOR
-from MOTEUR.scraping_widget import ScrapeWorker
+from MOTEUR.scraping.scraping_widget import ScrapeWorker
 
 
 def _patch_download(monkeypatch):
@@ -15,7 +15,7 @@ def _patch_download(monkeypatch):
         return {}
 
     monkeypatch.setattr(
-        'MOTEUR.scraping_widget.download_images',
+        'MOTEUR.scraping.scraping_widget.download_images',
         fake_download,
     )
     return calls

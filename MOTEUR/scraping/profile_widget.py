@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal
 
-from MOTEUR.scraping.profile_manager import ProfileManager
+from .profile_manager import ProfileManager
 
 
 class ProfileWidget(QWidget):

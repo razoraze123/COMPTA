@@ -31,7 +31,9 @@ from .db import (
     update_purchase,
     delete_purchase,
     fetch_all_purchases,
+    _insert_supplier,
 )
+from .signals import signals
 from ..models import Purchase
 from ..accounting.db import next_sequence
 from ..db import connect
@@ -145,19 +147,6 @@ class AchatWidget(QWidget):
             for sid, name in conn.execute("SELECT id, name FROM suppliers"):
                 self.supplier_combo.addItem(name, sid)
 
-    def _get_supplier_id(self) -> int | None:
-        sid = self.supplier_combo.currentData()
-        if sid is not None:
-            return sid
-        name = self.supplier_combo.currentText().strip()
-        if not name:
-            return None
-        sid = add_supplier(db_path, name)
-        self.load_suppliers()
-        idx = self.supplier_combo.findData(sid)
-        if idx >= 0:
-            self.supplier_combo.setCurrentIndex(idx)
-        return sid
 
     def load_expense_accounts(self) -> None:
         self.account_combo.clear()
@@ -218,10 +207,20 @@ class AchatWidget(QWidget):
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
-        supplier_id = self._get_supplier_id()
+        supplier_id = self.supplier_combo.currentData()
         if supplier_id is None:
-            QMessageBox.warning(self, "Achat", "Fournisseur manquant")
-            return
+            name = self.supplier_combo.currentText().strip()
+            if not name:
+                QMessageBox.warning(self, "Achat", "Fournisseur manquant")
+                return
+            with connect(db_path) as conn:
+                supplier_id = _insert_supplier(conn, name)
+                conn.commit()
+            signals.supplier_changed.emit()
+            self.load_suppliers()
+            idx = self.supplier_combo.findData(supplier_id)
+            if idx >= 0:
+                self.supplier_combo.setCurrentIndex(idx)
         pur = Purchase(
             id=None,
             date=date,
@@ -238,6 +237,8 @@ class AchatWidget(QWidget):
         )
         add_purchase(db_path, pur)
         self.load_purchases()
+        self.attachment_path = None
+        self.invoice_edit.setText(self.get_next_inv())
 
     @Slot()
     def edit_purchase(self) -> None:
@@ -259,10 +260,20 @@ class AchatWidget(QWidget):
             return
         date = self.date_edit.date().toString("yyyy-MM-dd")
         amount = self.amount_spin.value()
-        supplier_id = self._get_supplier_id()
+        supplier_id = self.supplier_combo.currentData()
         if supplier_id is None:
-            QMessageBox.warning(self, "Achat", "Fournisseur manquant")
-            return
+            name = self.supplier_combo.currentText().strip()
+            if not name:
+                QMessageBox.warning(self, "Achat", "Fournisseur manquant")
+                return
+            with connect(db_path) as conn:
+                supplier_id = _insert_supplier(conn, name)
+                conn.commit()
+            signals.supplier_changed.emit()
+            self.load_suppliers()
+            idx = self.supplier_combo.findData(supplier_id)
+            if idx >= 0:
+                self.supplier_combo.setCurrentIndex(idx)
         pur = Purchase(
             id=purchase_id,
             date=date,

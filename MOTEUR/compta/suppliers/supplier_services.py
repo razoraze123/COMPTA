@@ -28,7 +28,7 @@ def init_view(db_path: Path | str) -> None:
 
 
 def get_suppliers_with_balance(db_path: Path | str) -> List[Tuple[int, str, float]]:
-    """Return supplier id, name and balance."""
+    """Return supplier id, name and balance (debit minus credit)."""
     init_view(db_path)
     with connect(db_path) as conn:
         cur = conn.execute(

@@ -30,3 +30,14 @@ def test_transactions_dialog_rows(tmp_path: Path) -> None:
     add_purchase(db, p2)
     rows = get_account_transactions(db, "606300")
     assert [r.balance for r in rows] == [100.0, 150.0]
+
+
+def test_account_without_entries_has_zero_balance(tmp_path: Path) -> None:
+    db = tmp_path / "rev_zero.db"
+    init_db(db)
+    with connect(db) as conn:
+        conn.execute("INSERT INTO accounts (code, name) VALUES ('1000','Test')")
+        conn.commit()
+
+    balances = {code: bal for code, _, bal in get_accounts_with_balance(db)}
+    assert balances["1000"] == 0.0

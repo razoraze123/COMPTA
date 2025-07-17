@@ -291,6 +291,9 @@ class MainWindow(QMainWindow):
         self.profile_page.profile_chosen.connect(
             self.scraping_images_page.set_selected_profile
         )
+        self.profile_page.profiles_updated.connect(
+            self.scraping_images_page.refresh_profiles
+        )
 
         # Dashboard page showing purchase statistics
         self.dashboard_page = DashboardWidget()

@@ -163,6 +163,13 @@ class ScrapingImagesWidget(QWidget):
         main_layout.addWidget(self.console)
 
     # ------------------------------------------------------------------
+    @Slot()
+    def refresh_profiles(self) -> None:
+        """Reload profiles and update the combo box."""
+        self.profile_manager = ProfileManager()
+        self.profile_combo.clear()
+        self.profile_combo.addItems(sorted(self.profile_manager.profiles))
+
     def select_folder(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Choisir un dossier")
         if folder:

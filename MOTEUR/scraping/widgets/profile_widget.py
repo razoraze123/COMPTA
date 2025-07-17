@@ -20,6 +20,7 @@ class ProfileWidget(QWidget):
     """Widget to manage scraping profiles."""
 
     profile_chosen = Signal(str)
+    profiles_updated = Signal()
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -86,6 +87,7 @@ class ProfileWidget(QWidget):
         self.manager.add_or_update_profile(name, css)
         self.profile_list.addItem(name)
         self.profile_list.setCurrentRow(self.profile_list.count() - 1)
+        self.profiles_updated.emit()
 
     def save_profile(self) -> None:
         name = self.name_edit.text().strip()
@@ -105,6 +107,7 @@ class ProfileWidget(QWidget):
             for i in range(self.profile_list.count())
         ]
         self.profile_list.setCurrentRow(items.index(name))
+        self.profiles_updated.emit()
 
     def delete_profile(self) -> None:
         name = self.name_edit.text().strip()
@@ -120,6 +123,7 @@ class ProfileWidget(QWidget):
         self.css_edit.clear()
         if self.profile_list.count():
             self.profile_list.setCurrentRow(0)
+        self.profiles_updated.emit()
 
     def use_profile(self) -> None:
         """Emit the currently selected profile name."""

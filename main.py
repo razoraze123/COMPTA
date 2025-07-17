@@ -24,6 +24,7 @@ except ModuleNotFoundError:
 from MOTEUR.scraping.widgets.scraping_widget import ScrapingImagesWidget
 from MOTEUR.compta.achats.widget import AchatWidget
 from MOTEUR.compta.ventes.widget import VenteWidget
+from MOTEUR.compta.accounting.widget import AccountWidget
 from MOTEUR.scraping.widgets.profile_widget import ProfileWidget
 from MOTEUR.compta.dashboard.widget import DashboardWidget
 import subprocess
@@ -185,6 +186,7 @@ class MainWindow(QMainWindow):
             "Grand Livre": BASE_DIR / "icons" / "grand_livre.svg",
             "Bilan": BASE_DIR / "icons" / "bilan.svg",
             "Résultat": BASE_DIR / "icons" / "resultat.svg",
+            "Comptes": BASE_DIR / "icons" / "journal.svg",
             "Achat": BASE_DIR / "icons" / "achat.svg",
             "Ventes": BASE_DIR / "icons" / "ventes.svg",
         }
@@ -200,6 +202,11 @@ class MainWindow(QMainWindow):
                 self.achat_btn = btn
                 btn.clicked.connect(
                     lambda _, b=btn: self.show_achat_page(b)
+                )
+            elif name == "Comptes":
+                self.accounts_btn = btn
+                btn.clicked.connect(
+                    lambda _, b=btn: self.show_accounts_page(b)
                 )
             elif name == "Ventes":
                 self.ventes_btn = btn
@@ -302,6 +309,13 @@ class MainWindow(QMainWindow):
         self.achat_page = AchatWidget()
         self.stack.addWidget(self.achat_page)
 
+        # Page for account management
+        self.accounts_page = AccountWidget()
+        self.accounts_page.accounts_updated.connect(
+            self.achat_page.refresh_accounts
+        )
+        self.stack.addWidget(self.accounts_page)
+
         # Page for ventes
         self.ventes_page = VenteWidget()
         self.stack.addWidget(self.ventes_page)
@@ -365,6 +379,12 @@ class MainWindow(QMainWindow):
         button.setChecked(True)
         self.dashboard_page.refresh()
         self.stack.setCurrentWidget(self.dashboard_page)
+
+    def show_accounts_page(self, button: SidebarButton) -> None:
+        """Display the account management page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.accounts_page)
 
     def show_achat_page(self, button: SidebarButton) -> None:
         """Display the achat page."""

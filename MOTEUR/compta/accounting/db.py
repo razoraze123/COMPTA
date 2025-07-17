@@ -229,3 +229,56 @@ def apply_letter(db_path: Path | str, code: str, entry_ids: list[int]) -> None:
             [code, *entry_ids],
         )
         conn.commit()
+
+
+def add_account(
+    db_path: Path | str,
+    code: str,
+    name: str,
+    parent_code: str | None = None,
+) -> None:
+    """Insert or replace an account."""
+    with connect(db_path) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO accounts(code, name, parent_code) VALUES (?,?,?)",
+            (code, name, parent_code),
+        )
+        conn.commit()
+
+
+def update_account(
+    db_path: Path | str,
+    code: str,
+    name: str,
+    parent_code: str | None = None,
+) -> None:
+    """Update the *name* or *parent_code* of an account."""
+    with connect(db_path) as conn:
+        conn.execute(
+            "UPDATE accounts SET name=?, parent_code=? WHERE code=?",
+            (name, parent_code, code),
+        )
+        conn.commit()
+
+
+def delete_account(db_path: Path | str, code: str) -> None:
+    """Remove account with given *code*."""
+    with connect(db_path) as conn:
+        conn.execute("DELETE FROM accounts WHERE code=?", (code,))
+        conn.commit()
+
+
+def fetch_accounts(db_path: Path | str, prefix: str | None = None):
+    """Return all accounts, optionally filtered by *prefix*."""
+    with connect(db_path) as conn:
+        if prefix:
+            cur = conn.execute(
+                "SELECT code, name FROM accounts WHERE code LIKE ? ORDER BY code",
+                (f"{prefix}%",),
+            )
+        else:
+            cur = conn.execute(
+                "SELECT code, name FROM accounts ORDER BY code",
+            )
+        rows = cur.fetchall()
+        return [(r[0], r[1]) for r in rows]

@@ -146,6 +146,11 @@ class AchatWidget(QWidget):
             for code, name in cur.fetchall():
                 self.account_combo.addItem(f"{code} {name}", code)
 
+    @Slot()
+    def refresh_accounts(self) -> None:
+        """Reload expense accounts from the DB."""
+        self.load_expense_accounts()
+
     def get_next_inv(self) -> str:
         with connect(db_path) as conn:
             return next_sequence(conn, "AC", QDate.currentDate().year())

@@ -51,6 +51,7 @@ source venv/bin/activate  # (ou venv\Scripts\activate sous Windows)
 
 # Installer les dépendances
 pip install -r requirements.txt
+If running `python main.py` shows 'No module named PySide6', make sure you executed `pip install -r requirements.txt`.
 
 # Lancer l'application
 python main.py

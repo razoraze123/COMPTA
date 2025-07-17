@@ -5,3 +5,11 @@ USER_AGENT = (
 )
 # Default CSS selector to find product images
 IMAGES_DEFAULT_SELECTOR = "img"
+
+COMMON_SELECTORS = [
+    "div.woocommerce-product-gallery__image img",
+    "figure.woocommerce-product-gallery__wrapper img",
+    "img.product-single__photo",
+    'img[src*="cdn.shopify.com"]',
+    "img.wp-post-image",
+]

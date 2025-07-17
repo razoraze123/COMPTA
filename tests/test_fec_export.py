@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from MOTEUR.achat_db import init_db, add_purchase
-from MOTEUR.accounting_db import export_fec
-from MOTEUR.models import Purchase
+from MOTEUR.compta.achat_db import init_db, add_purchase
+from MOTEUR.compta.accounting_db import export_fec
+from MOTEUR.compta.models import Purchase
 
 
 def test_export_fec_generates_file(tmp_path: Path) -> None:
     db = tmp_path / "p.db"
     init_db(db)
-    from MOTEUR.db import connect
+    from MOTEUR.compta.db import connect
     with connect(db) as conn:
         conn.execute("INSERT INTO suppliers (name) VALUES ('Test')")
         conn.commit()

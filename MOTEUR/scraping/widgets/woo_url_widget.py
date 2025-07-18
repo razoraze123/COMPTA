@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 from typing import Optional
 
+import requests
+
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -64,6 +66,10 @@ class WooImageURLWidget(QWidget):
         self.export_btn.clicked.connect(self.export_links)
         actions.addWidget(self.export_btn)
 
+        self.check_btn = QPushButton("Vérifier")
+        self.check_btn.clicked.connect(self.verify_links)
+        actions.addWidget(self.check_btn)
+
         layout.addLayout(actions)
 
         self.folder_path: Path | None = None
@@ -123,4 +129,40 @@ class WooImageURLWidget(QWidget):
         if path:
             Path(path).write_text(self.output.toPlainText(), encoding="utf-8")
             QMessageBox.information(self, "Export\u00e9", "Liens enregistr\u00e9s avec succ\u00e8s.")
+
+    def verify_links(self) -> None:
+        """Check each URL and warn about invalid ones."""
+        text = self.output.toPlainText().strip()
+        if not text:
+            QMessageBox.information(self, "V\u00e9rification", "Aucun lien \u00e0 v\u00e9rifier.")
+            return
+
+        invalid: list[str] = []
+        new_lines: list[str] = []
+        for line in text.splitlines():
+            url = line.strip()
+            if not url:
+                continue
+            try:
+                resp = requests.head(url, allow_redirects=True, timeout=5)
+                ok = resp.status_code == 200
+            except Exception:  # pragma: no cover - network issues
+                ok = False
+
+            if ok:
+                new_lines.append(url)
+            else:
+                invalid.append(url)
+                new_lines.append(f"\u274c {url}")
+
+        self.output.setText("\n".join(new_lines))
+
+        if invalid:
+            QMessageBox.warning(
+                self,
+                "Liens invalides",
+                f"{len(invalid)} lien(s) invalide(s) trouv\u00e9(s).",
+            )
+        else:
+            QMessageBox.information(self, "V\u00e9rification", "Tous les liens sont valides.")
 

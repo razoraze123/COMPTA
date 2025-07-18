@@ -21,7 +21,7 @@ except ModuleNotFoundError:
     print("Install dependencies with pip install -r requirements.txt")
     sys.exit(1)
 
-from MOTEUR.scraping.widgets.scraping_widget import ScrapingImagesWidget
+from MOTEUR.scraping.widgets.scrap_widget import ScrapWidget
 from MOTEUR.compta.achats.widget import AchatWidget
 from MOTEUR.compta.ventes.widget import VenteWidget
 from MOTEUR.compta.accounting.widget import AccountWidget
@@ -254,25 +254,15 @@ class MainWindow(QMainWindow):
         scrap_section.add_widget(self.profiles_btn)
         self.button_group.append(self.profiles_btn)
 
-        self.scrap_img_btn = SidebarButton(
-            "Scraping Images",
+        self.scrap_btn = SidebarButton(
+            "Scrap",
             icon_path=str(BASE_DIR / "icons" / "scraping.svg"),
         )
-        self.scrap_img_btn.clicked.connect(
-            lambda _, b=self.scrap_img_btn: self.show_scraping_images(b)
+        self.scrap_btn.clicked.connect(
+            lambda _, b=self.scrap_btn: self.show_scrap_page(b)
         )
-        scrap_section.add_widget(self.scrap_img_btn)
-        self.button_group.append(self.scrap_img_btn)
-
-        self.scrap_var_btn = SidebarButton(
-            "Scraping Variantes",
-            icon_path=str(BASE_DIR / "icons" / "variants.svg"),
-        )
-        self.scrap_var_btn.clicked.connect(
-            lambda _, b=self.scrap_var_btn: self.show_scraping_variants(b)
-        )
-        scrap_section.add_widget(self.scrap_var_btn)
-        self.button_group.append(self.scrap_var_btn)
+        scrap_section.add_widget(self.scrap_btn)
+        self.button_group.append(self.scrap_btn)
 
         btn = SidebarButton(
             "Scraping Descriptions",
@@ -312,19 +302,15 @@ class MainWindow(QMainWindow):
         self.profile_page = ProfileWidget()
         self.stack.addWidget(self.profile_page)
 
-        # Page for scraping images
-        self.scraping_images_page = ScrapingImagesWidget()
-        self.stack.addWidget(self.scraping_images_page)
-
-        from MOTEUR.scraping.widgets.variant_widget import ScrapingVariantsWidget
-        self.scraping_variants_page = ScrapingVariantsWidget()
-        self.stack.addWidget(self.scraping_variants_page)
+        # Page regrouping scraping images and variants
+        self.scrap_page = ScrapWidget()
+        self.stack.addWidget(self.scrap_page)
 
         self.profile_page.profile_chosen.connect(
-            self.scraping_images_page.set_selected_profile
+            self.scrap_page.images_widget.set_selected_profile
         )
         self.profile_page.profiles_updated.connect(
-            self.scraping_images_page.refresh_profiles
+            self.scrap_page.images_widget.refresh_profiles
         )
 
         # Dashboard page showing purchase statistics
@@ -336,7 +322,7 @@ class MainWindow(QMainWindow):
             lambda: self.open_from_dashboard("Grand Livre")
         )
         self.dashboard_page.scraping_summary_requested.connect(
-            lambda: self.show_scraping_images(self.scrap_img_btn)
+            lambda: self.show_scrap_page(self.scrap_btn)
         )
         self.stack.addWidget(self.dashboard_page)
 
@@ -412,17 +398,23 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(label)
         self.stack.setCurrentWidget(label)
 
-    def show_scraping_images(self, button: SidebarButton) -> None:
-        """Display the scraping images page."""
+    def show_scrap_page(self, button: SidebarButton, tab_index: int = 0) -> None:
+        """Display the combined scraping page."""
         self.clear_selection()
         button.setChecked(True)
-        self.stack.setCurrentWidget(self.scraping_images_page)
+        try:
+            self.scrap_page.tabs.setCurrentIndex(tab_index)
+        except Exception:
+            pass
+        self.stack.setCurrentWidget(self.scrap_page)
+
+    def show_scraping_images(self, button: SidebarButton) -> None:
+        """Display the scraping images page."""
+        self.show_scrap_page(button, tab_index=0)
 
     def show_scraping_variants(self, button: SidebarButton) -> None:
         """Display the scraping variants page."""
-        self.clear_selection()
-        button.setChecked(True)
-        self.stack.setCurrentWidget(self.scraping_variants_page)
+        self.show_scrap_page(button, tab_index=1)
 
     def show_profiles(self, button: SidebarButton) -> None:
         """Display the profile management page."""
@@ -518,7 +510,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def refresh_scraping(self) -> None:
         """Reset the image scraping page and restart the application."""
-        page = self.scraping_images_page
+        page = self.scrap_page.images_widget
         page.start_btn.setEnabled(True)
         page.console.clear()
         page.progress_bar.setValue(0)

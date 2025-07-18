@@ -264,6 +264,16 @@ class MainWindow(QMainWindow):
         scrap_section.add_widget(self.scrap_img_btn)
         self.button_group.append(self.scrap_img_btn)
 
+        self.scrap_var_btn = SidebarButton(
+            "Scraping Variantes",
+            icon_path=str(BASE_DIR / "icons" / "variants.svg"),
+        )
+        self.scrap_var_btn.clicked.connect(
+            lambda _, b=self.scrap_var_btn: self.show_scraping_variants(b)
+        )
+        scrap_section.add_widget(self.scrap_var_btn)
+        self.button_group.append(self.scrap_var_btn)
+
         btn = SidebarButton(
             "Scraping Descriptions",
             icon_path=str(BASE_DIR / "icons" / "text.svg"),
@@ -305,6 +315,10 @@ class MainWindow(QMainWindow):
         # Page for scraping images
         self.scraping_images_page = ScrapingImagesWidget()
         self.stack.addWidget(self.scraping_images_page)
+
+        from MOTEUR.scraping.widgets.variant_widget import ScrapingVariantsWidget
+        self.scraping_variants_page = ScrapingVariantsWidget()
+        self.stack.addWidget(self.scraping_variants_page)
 
         self.profile_page.profile_chosen.connect(
             self.scraping_images_page.set_selected_profile
@@ -403,6 +417,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.scraping_images_page)
+
+    def show_scraping_variants(self, button: SidebarButton) -> None:
+        """Display the scraping variants page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.scraping_variants_page)
 
     def show_profiles(self, button: SidebarButton) -> None:
         """Display the profile management page."""

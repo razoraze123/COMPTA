@@ -121,6 +121,25 @@ les tests unitaires peuvent ensuite être exécutés avec **pytest** depuis la r
 
 ```bash
 PYTHONPATH=. pytest
+
+```
+
+### Vérification du style
+
+Le dépôt inclut une configuration **flake8** (`.flake8`) fixant notamment la
+longueur maximale des lignes à 100 caractères. Vous pouvez vérifier le code
+avec :
+
+```bash
+flake8
+```
+
+### Commande combinée
+
+Une cible `make check` est fournie pour lancer à la fois **flake8** et les tests :
+
+```bash
+make check
 ```
 
 ## 📤 Export FEC et TVA

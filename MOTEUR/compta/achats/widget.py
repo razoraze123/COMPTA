@@ -151,7 +151,6 @@ class AchatWidget(QWidget):
             for sid, name in conn.execute("SELECT id, name FROM suppliers"):
                 self.supplier_combo.addItem(name, sid)
 
-
     def load_expense_accounts(self) -> None:
         self.account_combo.clear()
         with connect(db_path) as conn:

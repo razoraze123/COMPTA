@@ -118,10 +118,18 @@ def save_images_to_file(title: str, variants: dict[str, str], path: Path) -> Non
     logging.info("\U0001f4be Variantes enregistr\u00e9es dans %s", path)
 
 
-def scrape_variants(url: str, selector: str, output: Path) -> None:
-    """High-level helper combining extraction and saving."""
-    title, variants = extract_variants(url, selector)
-    save_to_file(title, variants, output)
+def scrape_variants(url: str, selector: str, output: Path, *, with_images: bool = False) -> None:
+    """High-level helper combining extraction and saving.
+
+    When *with_images* is ``True`` the function also grabs the image URL for
+    each variant and stores the mapping in ``output``.
+    """
+    if with_images:
+        title, variants = extract_variants_with_images(url)
+        save_images_to_file(title, variants, output)
+    else:
+        title, variants = extract_variants(url, selector)
+        save_to_file(title, variants, output)
 
 
 def main() -> None:
@@ -141,6 +149,12 @@ def main() -> None:
         "-o", "--output", default="variants.txt", help="Fichier de sortie"
     )
     parser.add_argument(
+        "-i",
+        "--images",
+        action="store_true",
+        help="Inclure les URL d'images des variantes",
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -154,7 +168,7 @@ def main() -> None:
     logging.basicConfig(level=getattr(logging, args.log_level), format="%(levelname)s: %(message)s")
 
     try:
-        scrape_variants(args.url, args.selector, Path(args.output))
+        scrape_variants(args.url, args.selector, Path(args.output), with_images=args.images)
     except (NoSuchElementException, TimeoutException, ValueError) as exc:
         logging.error("%s", exc)
 

@@ -1046,14 +1046,14 @@ from PySide6.QtWidgets import (
 
 from ..scraping_variantes import (
     VARIANT_DEFAULT_SELECTOR,
-    extract_variants,
+    extract_variants_with_images,
 )
 
 
 class VariantWorker(QThread):
     """Thread running the variant extraction."""
 
-    finished = Signal(str, list)
+    finished = Signal(str, dict)
 
     def __init__(self, url: str, selector: str) -> None:
         super().__init__()
@@ -1062,10 +1062,10 @@ class VariantWorker(QThread):
 
     def run(self) -> None:  # noqa: D401 - QThread API
         try:
-            title, variants = extract_variants(self.url, self.selector)
+            title, variants = extract_variants_with_images(self.url)
         except Exception as exc:  # pragma: no cover - network/driver issues
             logging.getLogger(__name__).error("%s", exc)
-            self.finished.emit("", [])
+            self.finished.emit("", {})
             return
         self.finished.emit(title, variants)
 
@@ -1115,10 +1115,10 @@ class ScrapingVariantsWidget(QWidget):
         self.worker.finished.connect(self.scraping_finished)
         self.worker.start()
 
-    @Slot(str, list)
-    def scraping_finished(self, title: str, variants: list[str]) -> None:
+    @Slot(str, dict)
+    def scraping_finished(self, title: str, variants: dict[str, str]) -> None:
         if title:
             self.console.append(f"Produit: {title}")
-            for v in variants:
-                self.console.append(f"- {v}")
+            for name, link in variants.items():
+                self.console.append(f"- {name} : {link}")
         self.start_btn.setEnabled(True)

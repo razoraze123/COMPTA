@@ -81,18 +81,29 @@ Interface configuration (chemins, utilisateurs, préférences)
 
 ## Configuration du driver Selenium
 
-La fonction `setup_driver` utilisée par le module de scraping accepte
-désormais deux paramètres optionnels :
+Pour pouvoir lancer un navigateur contrôlé par **Selenium**, vous devez avoir
+installé **Chrome** et son utilitaire `chromedriver`, ce dernier devant être
+accessible dans votre variable d'environnement `PATH`. À défaut, l'appel à
+`setup_driver` lèvera `FileNotFoundError: chromedriver not found in PATH`.
+
+La fonction `setup_driver` utilisée par le module de scraping accepte désormais
+trois paramètres optionnels :
 
 - `window_size` : tuple `(largeur, hauteur)` pour définir la taille de la
   fenêtre Chrome (par défaut `1920, 1080`).
-- `timeout` : durée maximale de chargement des pages en secondes.
-  Laisser `None` pour reproduire le comportement actuel sans limite.
+- `timeout` : durée maximale de chargement des pages en secondes. Laisser
+  `None` pour reproduire le comportement actuel sans limite.
+- `chromedriver_path` : chemin explicite vers l'exécutable `chromedriver` si
+  celui-ci n'est pas présent dans `PATH`.
 
 ```python
 from MOTEUR.scraping.image_scraper.driver import setup_driver
 
+# Exemple avec taille de fenêtre personnalisée
 driver = setup_driver(window_size=(1280, 720), timeout=30)
+
+# Ou en précisant un chemin spécifique au chromedriver
+driver = setup_driver(chromedriver_path="/usr/local/bin/chromedriver")
 ```
 
 ## 🧪 Lancer les tests

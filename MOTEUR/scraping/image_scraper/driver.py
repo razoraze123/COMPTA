@@ -5,6 +5,7 @@ import shutil
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 def setup_driver(
@@ -43,9 +44,13 @@ def setup_driver(
     if chromedriver_path:
         service = Service(executable_path=chromedriver_path)
     else:
-        if shutil.which("chromedriver") is None:
-            raise FileNotFoundError("chromedriver not found in PATH")
-        service = Service()
+        path = shutil.which("chromedriver")
+        if not path:
+            try:
+                path = ChromeDriverManager().install()
+            except Exception as exc:
+                raise FileNotFoundError("chromedriver not found in PATH") from exc
+        service = Service(executable_path=path)
     driver = webdriver.Chrome(service=service, options=options)
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",

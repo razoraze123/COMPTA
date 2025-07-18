@@ -52,13 +52,20 @@ class ScrapeWorker(QThread):
         self.use_alt_json = use_alt_json
 
     def run(self) -> None:  # noqa: D401 - QThread API
-        result = download_images(
-            self.url,
-            css_selector=self.css,
-            parent_dir=self.folder,
-            progress_callback=lambda c, t: self.progress.emit(c, t),
-            use_alt_json=self.use_alt_json,
-        )
+        """Execute the scraping in a background thread."""
+        try:
+            result = download_images(
+                self.url,
+                css_selector=self.css,
+                parent_dir=self.folder,
+                progress_callback=lambda c, t: self.progress.emit(c, t),
+                use_alt_json=self.use_alt_json,
+            )
+        except FileNotFoundError as exc:  # chromedriver missing
+            logging.getLogger(__name__).error(
+                "ChromeDriver not found: install it or specify chromedriver_path"
+            )
+            result = {"folder": Path(), "first_image": None}
         self.finished.emit(result)
 
 

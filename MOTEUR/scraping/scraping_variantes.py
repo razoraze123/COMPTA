@@ -37,7 +37,17 @@ def extract_variants(url: str, selector: str = VARIANT_DEFAULT_SELECTOR) -> tupl
 
         title = driver.find_element(By.CSS_SELECTOR, "h1").text.strip()
         elems = driver.find_elements(By.CSS_SELECTOR, selector)
-        variants = [e.text.strip() for e in elems if e.text.strip()]
+        variants: list[str] = []
+        for elem in elems:
+            # Some shops hide the text inside the <input> element. In this
+            # case the variant name is stored in the ``value`` attribute or the
+            # associated label.  Fallback to ``value`` when ``elem.text`` is
+            # empty to ensure variants are correctly captured.
+            name = elem.text.strip()
+            if not name:
+                name = elem.get_attribute("value") or ""
+            if name:
+                variants.append(name)
         logging.info("\u2714\ufe0f %d variante(s) d\u00e9tect\u00e9e(s)", len(variants))
         return title, variants
     finally:

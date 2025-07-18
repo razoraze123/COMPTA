@@ -105,7 +105,7 @@ class VariantComparisonWidget(QWidget):
 
         base_url = self.domain_edit.text().strip().rstrip("/")
         links: list[str] = []
-        for file in self.folder_path.iterdir():
+        for file in sorted(self.folder_path.iterdir()):
             if file.suffix.lower() in self.ALLOWED_EXTENSIONS:
                 links.append(
                     f"{base_url}/wp-content/uploads/{date_path}/{file.name}"

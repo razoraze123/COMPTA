@@ -39,14 +39,19 @@ class RevisionTab(QWidget):
     @Slot()
     def refresh(self) -> None:
         self.table.setRowCount(0)
-        for code,name,bal in get_accounts_with_balance(DB_PATH):
-            r = self.table.rowCount(); self.table.insertRow(r)
-            item = QTableWidgetItem(code); item.setData(Qt.UserRole, code)
-            self.table.setItem(r,0,item)
-            self.table.setItem(r,1,QTableWidgetItem(name))
+        for code, name, bal in get_accounts_with_balance(DB_PATH):
+            r = self.table.rowCount()
+            self.table.insertRow(r)
+            item = QTableWidgetItem(code)
+            item.setData(Qt.UserRole, code)
+            self.table.setItem(r, 0, item)
+            self.table.setItem(r, 1, QTableWidgetItem(name))
+            # `bal` might be ``None`` if the SQL view returns NULL.
+            # Guard against it before formatting.
+            bal = bal if bal is not None else 0.0
             bal_item = QTableWidgetItem(f"{bal:.2f}")
-            bal_item.setForeground(Qt.darkGreen if bal>0 else Qt.red)
-            self.table.setItem(r,2,bal_item)
+            bal_item.setForeground(Qt.darkGreen if bal > 0 else Qt.red)
+            self.table.setItem(r, 2, bal_item)
 
     # ------------------------------------------------
     @Slot(int,int)

@@ -14,7 +14,8 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
-    QTextEdit,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -45,9 +46,11 @@ class WooImageURLWidget(QWidget):
         self.folder_btn.clicked.connect(self.choose_folder)
         layout.addWidget(self.folder_btn)
 
-        self.output = QTextEdit()
-        self.output.setPlaceholderText("Les URLs g\u00e9n\u00e9r\u00e9es s'afficheront ici.")
-        layout.addWidget(self.output)
+        self.table = QTableWidget(0, 2)
+        self.table.setHorizontalHeaderLabels(["URL", "Statut"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.table)
 
         actions = QHBoxLayout()
         self.generate_btn = QPushButton("G\u00e9n\u00e9rer")
@@ -59,7 +62,7 @@ class WooImageURLWidget(QWidget):
         actions.addWidget(self.copy_btn)
 
         self.clear_btn = QPushButton("Effacer")
-        self.clear_btn.clicked.connect(self.output.clear)
+        self.clear_btn.clicked.connect(self.clear_table)
         actions.addWidget(self.clear_btn)
 
         self.export_btn = QPushButton("Exporter en .txt")
@@ -104,20 +107,38 @@ class WooImageURLWidget(QWidget):
                 url = f"{base_url}/wp-content/uploads/{date_path}/{file.name}"
                 links.append(url)
 
+        self.table.setRowCount(0)
         if links:
-            self.output.setText("\n".join(links))
+            for url in links:
+                row = self.table.rowCount()
+                self.table.insertRow(row)
+                self.table.setItem(row, 0, QTableWidgetItem(url))
+                self.table.setItem(row, 1, QTableWidgetItem(""))
         else:
-            self.output.setText("Aucune image valide trouv\u00e9e dans le dossier.")
+            QMessageBox.information(
+                self,
+                "Information",
+                "Aucune image valide trouv\u00e9e dans le dossier.",
+            )
+
+    def clear_table(self) -> None:
+        """Remove all rows from the table."""
+        self.table.setRowCount(0)
 
     def copy_links(self) -> None:
         """Copy generated links to the clipboard."""
         clipboard: QClipboard = QApplication.clipboard()
-        clipboard.setText(self.output.toPlainText())
+        links = []
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if item:
+                links.append(item.text())
+        clipboard.setText("\n".join(links))
         QMessageBox.information(self, "Copi\u00e9", "Liens copi\u00e9s dans le presse-papiers.")
 
     def export_links(self) -> None:
         """Export generated links to a text file."""
-        if not self.output.toPlainText():
+        if self.table.rowCount() == 0:
             QMessageBox.warning(self, "Erreur", "Aucun lien \u00e0 exporter.")
             return
         path, _ = QFileDialog.getSaveFileName(
@@ -127,20 +148,26 @@ class WooImageURLWidget(QWidget):
             "Fichier texte (*.txt)",
         )
         if path:
-            Path(path).write_text(self.output.toPlainText(), encoding="utf-8")
+            links = []
+            for row in range(self.table.rowCount()):
+                item = self.table.item(row, 0)
+                if item:
+                    links.append(item.text())
+            Path(path).write_text("\n".join(links), encoding="utf-8")
             QMessageBox.information(self, "Export\u00e9", "Liens enregistr\u00e9s avec succ\u00e8s.")
 
     def verify_links(self) -> None:
         """Check each URL and warn about invalid ones."""
-        text = self.output.toPlainText().strip()
-        if not text:
+        if self.table.rowCount() == 0:
             QMessageBox.information(self, "V\u00e9rification", "Aucun lien \u00e0 v\u00e9rifier.")
             return
 
         invalid: list[str] = []
-        new_lines: list[str] = []
-        for line in text.splitlines():
-            url = line.strip()
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if not item:
+                continue
+            url = item.text().strip()
             if not url:
                 continue
             try:
@@ -149,13 +176,10 @@ class WooImageURLWidget(QWidget):
             except Exception:  # pragma: no cover - network issues
                 ok = False
 
-            if ok:
-                new_lines.append(url)
-            else:
+            status_item = QTableWidgetItem("\u2705" if ok else "\u274c")
+            self.table.setItem(row, 1, status_item)
+            if not ok:
                 invalid.append(url)
-                new_lines.append(f"\u274c {url}")
-
-        self.output.setText("\n".join(new_lines))
 
         if invalid:
             QMessageBox.warning(

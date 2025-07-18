@@ -21,12 +21,8 @@ def test_table_populated_with_links(tmp_path: Path):
     widget.comparison_finished(data)
 
     assert widget.table.rowCount() == 2
-    links = {
-        widget.table.item(0, 1).text(),
-        widget.table.item(1, 1).text(),
-    }
-    assert any(link.endswith("a.jpg") for link in links)
-    assert any(link.endswith("b.png") for link in links)
+    assert widget.table.item(0, 1).text().endswith("a.jpg")
+    assert widget.table.item(1, 1).text().endswith("b.png")
     assert widget.table.item(0, 2).text() == "http://img/red.jpg"
     assert widget.table.item(1, 2).text() == "http://img/blue.jpg"
 
@@ -39,3 +35,12 @@ def test_missing_woo_link_fills_blank(tmp_path: Path):
 
     assert widget.table.rowCount() == 2
     assert widget.table.item(1, 1).text() == ""
+
+
+def test_generate_woo_links_sorted(tmp_path: Path):
+    (tmp_path / "b.jpg").touch()
+    (tmp_path / "a.png").touch()
+    widget = setup_widget(tmp_path)
+    links = widget.generate_woo_links()
+    assert links[0].endswith("a.png")
+    assert links[1].endswith("b.jpg")

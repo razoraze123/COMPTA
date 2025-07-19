@@ -44,6 +44,14 @@ class ProfileWidget(QWidget):
         self.css_edit.setPlaceholderText("Sélecteur CSS")
         form_layout.addWidget(self.css_edit)
 
+        self.domain_edit = QLineEdit()
+        self.domain_edit.setPlaceholderText("Domaine")
+        form_layout.addWidget(self.domain_edit)
+
+        self.date_edit = QLineEdit()
+        self.date_edit.setPlaceholderText("Date YYYY/MM")
+        form_layout.addWidget(self.date_edit)
+
         main_layout.addLayout(form_layout)
 
         # Buttons
@@ -74,6 +82,8 @@ class ProfileWidget(QWidget):
             profile = self.manager.get_profile(name)
             css = profile.css_selector if profile else ""
             self.css_edit.setText(css)
+            self.domain_edit.setText(profile.domain if profile else "")
+            self.date_edit.setText(profile.date if profile else "")
 
     def add_profile(self) -> None:
         name = self.name_edit.text().strip()
@@ -81,10 +91,12 @@ class ProfileWidget(QWidget):
             QMessageBox.warning(self, "Profil", "Nom manquant")
             return
         css = self.css_edit.text().strip()
+        domain = self.domain_edit.text().strip()
+        date = self.date_edit.text().strip()
         if name in self.manager.profiles:
             QMessageBox.information(self, "Profil", "Ce profil existe déjà")
             return
-        self.manager.add_or_update_profile(name, css)
+        self.manager.add_or_update_profile(name, css, domain, date)
         self.profile_list.addItem(name)
         self.profile_list.setCurrentRow(self.profile_list.count() - 1)
         self.profiles_updated.emit()
@@ -95,7 +107,9 @@ class ProfileWidget(QWidget):
             QMessageBox.warning(self, "Profil", "Nom manquant")
             return
         css = self.css_edit.text().strip()
-        self.manager.add_or_update_profile(name, css)
+        domain = self.domain_edit.text().strip()
+        date = self.date_edit.text().strip()
+        self.manager.add_or_update_profile(name, css, domain, date)
         # Ensure the list has this profile
         for i in range(self.profile_list.count()):
             if self.profile_list.item(i).text() == name:
@@ -121,6 +135,8 @@ class ProfileWidget(QWidget):
                 break
         self.name_edit.clear()
         self.css_edit.clear()
+        self.domain_edit.clear()
+        self.date_edit.clear()
         if self.profile_list.count():
             self.profile_list.setCurrentRow(0)
         self.profiles_updated.emit()

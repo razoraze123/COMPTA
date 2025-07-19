@@ -13,6 +13,8 @@ class Profile:
     """Simple container for a scraping profile."""
 
     css_selector: str
+    domain: str = "https://www.planetebob.fr"
+    date: str = "2025/07"
 
 
 class ProfileManager:
@@ -34,9 +36,16 @@ class ProfileManager:
                 with self.path.open("r", encoding="utf-8") as fh:
                     data = json.load(fh)
                 if isinstance(data, dict):
-                    self.profiles = {
-                        str(k): Profile(str(v)) for k, v in data.items()
-                    }
+                    self.profiles = {}
+                    for k, v in data.items():
+                        if isinstance(v, str):
+                            self.profiles[str(k)] = Profile(v)
+                        elif isinstance(v, dict):
+                            self.profiles[str(k)] = Profile(
+                                v.get("css", IMAGES_DEFAULT_SELECTOR),
+                                v.get("domain", "https://www.planetebob.fr"),
+                                v.get("date", "2025/07"),
+                            )
                 else:
                     self.profiles = {}
             except Exception:
@@ -49,7 +58,14 @@ class ProfileManager:
         """Write current profiles to the JSON file."""
         with self.path.open("w", encoding="utf-8") as fh:
             json.dump(
-                {name: p.css_selector for name, p in self.profiles.items()},
+                {
+                    name: {
+                        "css": p.css_selector,
+                        "domain": p.domain,
+                        "date": p.date,
+                    }
+                    for name, p in self.profiles.items()
+                },
                 fh,
                 ensure_ascii=False,
                 indent=2,
@@ -59,9 +75,9 @@ class ProfileManager:
         """Return the profile for *name* if present."""
         return self.profiles.get(name)
 
-    def add_or_update_profile(self, name: str, css: str) -> None:
-        """Add or update *name* with *css* and persist it."""
-        self.profiles[name] = Profile(css)
+    def add_or_update_profile(self, name: str, css: str, domain: str, date: str) -> None:
+        """Add or update *name* with profile parameters and persist it."""
+        self.profiles[name] = Profile(css, domain, date)
         self.save_profiles()
 
     def remove_profile(self, name: str) -> None:

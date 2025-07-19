@@ -2,14 +2,21 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication, QTableWidgetItem
 
 from MOTEUR.scraping.widgets.combined_scrape_widget import CombinedScrapeWidget
+from MOTEUR.scraping.profiles.manager import Profile
 
 
 def setup_widget(tmp_path: Path) -> CombinedScrapeWidget:
     app = QApplication.instance() or QApplication([])
     widget = CombinedScrapeWidget()
     widget.scrape_folder = tmp_path
-    widget.domain_edit.setText("https://shop.com")
-    widget.date_edit.setText("2024/05")
+    widget.profile_manager.profiles["test"] = Profile(
+        "img", "https://shop.com", "2024/05"
+    )
+    widget.profile_combo.clear()
+    widget.profile_combo.addItem("test")
+    widget.profile_combo.setCurrentText("test")
+    widget.domain = "https://shop.com"
+    widget.date = "2024/05"
     return widget
 
 

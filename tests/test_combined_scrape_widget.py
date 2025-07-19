@@ -45,3 +45,21 @@ def test_populate_table_more_variants_than_images(tmp_path: Path):
     assert widget.table.rowCount() == 2
     assert widget.table.item(1, 1).text() == ""
     assert widget.table.item(1, 2).text() == "http://img/blue.jpg"
+
+
+def test_populate_table_filename_match(tmp_path: Path):
+    (tmp_path / "dog.webp").touch()
+    (tmp_path / "camel.webp").touch()
+    widget = setup_widget(tmp_path)
+    data = {
+        "Dog": "http://img/dog.jpg",
+        "Camel": "http://img/camel.jpg",
+    }
+    widget.populate_table(data)
+
+    mapping = {
+        widget.table.item(i, 0).text(): widget.table.item(i, 1).text()
+        for i in range(widget.table.rowCount())
+    }
+    assert mapping["Camel"].endswith("camel.webp")
+    assert mapping["Dog"].endswith("dog.webp")

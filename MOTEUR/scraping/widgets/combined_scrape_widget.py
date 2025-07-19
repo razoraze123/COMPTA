@@ -19,6 +19,17 @@ from PySide6.QtWidgets import (
 from .scraping_widget import ScrapeWorker
 from ..scraping_variantes import extract_variants_with_images
 from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
+from ..image_scraper.rename import clean_filename
+
+
+def find_woo_link(name: str, links: list[str]) -> str | None:
+    """Return and remove the first link whose filename contains *name*."""
+    key = clean_filename(name)
+    for idx, url in enumerate(list(links)):
+        filename = Path(url).stem
+        if key and key in clean_filename(filename):
+            return links.pop(idx)
+    return None
 
 
 class CombinedScrapeWidget(QWidget):
@@ -92,17 +103,26 @@ class CombinedScrapeWidget(QWidget):
 
     def populate_table(self, variants: dict[str, str]) -> None:
         woo_links = self.generate_woo_links()
+        remaining = list(woo_links)
         items = list(variants.items())
-        total = max(len(woo_links), len(items))
         self.table.setRowCount(0)
-        for idx in range(total):
+
+        for name, comp in items:
+            woo = find_woo_link(name, remaining)
+            if woo is None and remaining:
+                woo = remaining.pop(0)
             row = self.table.rowCount()
             self.table.insertRow(row)
-            name, comp = (items[idx] if idx < len(items) else ("", ""))
-            woo = woo_links[idx] if idx < len(woo_links) else ""
             self.table.setItem(row, 0, QTableWidgetItem(name))
-            self.table.setItem(row, 1, QTableWidgetItem(woo))
+            self.table.setItem(row, 1, QTableWidgetItem(woo or ""))
             self.table.setItem(row, 2, QTableWidgetItem(comp))
+
+        for woo in remaining:
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+            self.table.setItem(row, 0, QTableWidgetItem(""))
+            self.table.setItem(row, 1, QTableWidgetItem(woo))
+            self.table.setItem(row, 2, QTableWidgetItem(""))
 
     @Slot()
     def start_process(self) -> None:

@@ -125,6 +125,10 @@ Une fois l'opération terminée, un tableau rassemble les informations suivantes
 | Blue | https://shop.com/wp-content/uploads/2024/05/b.png | http://img/blue.jpg |
 |  | https://shop.com/wp-content/uploads/2024/05/c.png |  |
 
+Les liens WooCommerce sont appariés aux variantes en cherchant un mot clé
+dans le nom du fichier d'image. Par exemple, le fichier `camel.webp` sera
+automatiquement associé à la variante « Camel ».
+
 ## 🧪 Lancer les tests
 
 Après avoir installé les dépendances du projet avec :

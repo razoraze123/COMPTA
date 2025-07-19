@@ -109,6 +109,22 @@ driver = setup_driver(window_size=(1280, 720), timeout=30)
 driver = setup_driver(chromedriver_path="/usr/local/bin/chromedriver")
 ```
 
+## Widget de scraping combiné
+
+Le `CombinedScrapeWidget` lance en une seule étape :
+
+1. le téléchargement des images du concurrent ;
+2. la création des liens WooCommerce depuis le dossier local ;
+3. la récupération des variantes du produit.
+
+Une fois l'opération terminée, un tableau rassemble les informations suivantes :
+
+| Variante | Lien Woo | Lien Concurrent |
+|----------|----------|-----------------|
+| Red | https://shop.com/wp-content/uploads/2024/05/a.jpg | http://img/red.jpg |
+| Blue | https://shop.com/wp-content/uploads/2024/05/b.png | http://img/blue.jpg |
+|  | https://shop.com/wp-content/uploads/2024/05/c.png |  |
+
 ## 🧪 Lancer les tests
 
 Après avoir installé les dépendances du projet avec :

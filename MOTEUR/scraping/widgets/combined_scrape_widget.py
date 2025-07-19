@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from .scraping_widget import ScrapeWorker
 from ..scraping_variantes import extract_variants_with_images
+from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
 
 
 class CombinedScrapeWidget(QWidget):
@@ -33,6 +34,10 @@ class CombinedScrapeWidget(QWidget):
         self.url_edit = QLineEdit()
         self.url_edit.setPlaceholderText("Lien produit concurrent")
         layout.addWidget(self.url_edit)
+
+        self.selector_edit = QLineEdit(IMAGES_DEFAULT_SELECTOR)
+        self.selector_edit.setPlaceholderText("Sélecteur CSS des images")
+        layout.addWidget(self.selector_edit)
 
         self.domain_label = QLabel("Domaine WooCommerce :")
         self.domain_edit = QLineEdit("https://www.planetebob.fr")
@@ -104,10 +109,11 @@ class CombinedScrapeWidget(QWidget):
         url = self.url_edit.text().strip()
         if not url:
             return
+        css = self.selector_edit.text().strip() or IMAGES_DEFAULT_SELECTOR
         self.start_btn.setEnabled(False)
         self.progress.setValue(0)
         self.progress.show()
-        self.worker = ScrapeWorker(url, "", "images")
+        self.worker = ScrapeWorker(url, css, "images")
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.scrape_finished)
         self.worker.start()

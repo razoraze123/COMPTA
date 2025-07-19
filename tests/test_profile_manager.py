@@ -35,13 +35,19 @@ def test_default_profile_creation(tmp_path: Path) -> None:
 
     with json_path.open() as fh:
         data = json.load(fh)
-    assert data == {"default": IMAGES_DEFAULT_SELECTOR}
+    assert data == {
+        "default": {
+            "css": IMAGES_DEFAULT_SELECTOR,
+            "domain": "https://www.planetebob.fr",
+            "date": "2025/07",
+        }
+    }
 
 
 def test_add_and_load_profile(tmp_path: Path) -> None:
     json_path = tmp_path / "profiles.json"
     manager = ProfileManager(json_path)
-    manager.add_or_update_profile("amazon", "img.s-image")
+    manager.add_or_update_profile("amazon", "img.s-image", "https://a.com", "2024/01")
 
     # Reload from disk
     new_manager = ProfileManager(json_path)
@@ -61,7 +67,7 @@ def test_scrape_worker_receives_selected_css(monkeypatch) -> None:
 def test_profile_css_used_in_scraper(monkeypatch, tmp_path: Path) -> None:
     json_path = tmp_path / "profiles.json"
     manager = ProfileManager(json_path)
-    manager.add_or_update_profile("shop", "div.img")
+    manager.add_or_update_profile("shop", "div.img", "https://b.com", "2024/02")
 
     calls = _patch_download(monkeypatch)
     profile = manager.get_profile("shop")
@@ -128,6 +134,8 @@ def test_profile_widget_updates_scraping_widget(tmp_path: Path, monkeypatch) -> 
 
     prof_w.name_edit.setText("new")
     prof_w.css_edit.setText("img.x")
+    prof_w.domain_edit.setText("https://c.com")
+    prof_w.date_edit.setText("2024/03")
     prof_w.add_profile()
 
     items = [scrap_w.profile_combo.itemText(i) for i in range(scrap_w.profile_combo.count())]

@@ -6,6 +6,8 @@ from typing import Optional
 
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -14,12 +16,15 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
+    QTextEdit,
+    QComboBox,
 )
 
 from .scraping_widget import ScrapeWorker
 from ..scraping_variantes import extract_variants_with_images
 from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
 from ..image_scraper.rename import clean_filename
+from ..profiles.manager import ProfileManager
 
 
 def find_woo_link(name: str, links: list[str]) -> str | None:
@@ -42,23 +47,24 @@ class CombinedScrapeWidget(QWidget):
 
         layout = QVBoxLayout(self)
 
+        self.profile_manager = ProfileManager()
+
         self.url_edit = QLineEdit()
         self.url_edit.setPlaceholderText("Lien produit concurrent")
         layout.addWidget(self.url_edit)
 
-        self.selector_edit = QLineEdit(IMAGES_DEFAULT_SELECTOR)
-        self.selector_edit.setPlaceholderText("Sélecteur CSS des images")
-        layout.addWidget(self.selector_edit)
+        self.profile_combo = QComboBox()
+        self.profile_combo.addItems(sorted(self.profile_manager.profiles))
+        layout.addWidget(self.profile_combo)
 
-        self.domain_label = QLabel("Domaine WooCommerce :")
-        self.domain_edit = QLineEdit("https://www.planetebob.fr")
-        layout.addWidget(self.domain_label)
-        layout.addWidget(self.domain_edit)
-
-        self.date_label = QLabel("Date (YYYY/MM) :")
-        self.date_edit = QLineEdit("2025/07")
-        layout.addWidget(self.date_label)
-        layout.addWidget(self.date_edit)
+        folder_row = QHBoxLayout()
+        self.folder_edit = QLineEdit()
+        self.folder_edit.setPlaceholderText("Dossier images")
+        folder_row.addWidget(self.folder_edit)
+        self.browse_btn = QPushButton("\ud83d\udcc1")
+        self.browse_btn.clicked.connect(self.select_folder)
+        folder_row.addWidget(self.browse_btn)
+        layout.addLayout(folder_row)
 
         self.start_btn = QPushButton("Lancer")
         self.start_btn.clicked.connect(self.start_process)
@@ -68,6 +74,10 @@ class CombinedScrapeWidget(QWidget):
         self.progress.setRange(0, 100)
         self.progress.hide()
         layout.addWidget(self.progress)
+
+        self.console = QTextEdit()
+        self.console.setReadOnly(True)
+        layout.addWidget(self.console)
 
         self.table = QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels([
@@ -81,6 +91,8 @@ class CombinedScrapeWidget(QWidget):
 
         self.scrape_folder: Path | None = None
         self.worker: ScrapeWorker | None = None
+        self.domain: str = ""
+        self.date: str = ""
 
     # ------------------------------------------------------------------
     def valid_date(self, text: str) -> bool:
@@ -89,10 +101,10 @@ class CombinedScrapeWidget(QWidget):
     def generate_woo_links(self) -> list[str]:
         if not self.scrape_folder:
             return []
-        date_path = self.date_edit.text().strip()
+        date_path = self.date.strip()
         if not self.valid_date(date_path):
             return []
-        base_url = self.domain_edit.text().strip().rstrip("/")
+        base_url = self.domain.strip().rstrip("/")
         links: list[str] = []
         for file in sorted(self.scrape_folder.iterdir()):
             if file.suffix.lower() in self.ALLOWED_EXTENSIONS:
@@ -129,11 +141,20 @@ class CombinedScrapeWidget(QWidget):
         url = self.url_edit.text().strip()
         if not url:
             return
-        css = self.selector_edit.text().strip() or IMAGES_DEFAULT_SELECTOR
+        profile_name = self.profile_combo.currentText()
+        profile = self.profile_manager.get_profile(profile_name)
+        css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
+        self.domain = profile.domain if profile else "https://www.planetebob.fr"
+        self.date = profile.date if profile else "2025/07"
+        folder = self.folder_edit.text().strip() or "images"
+
+        self.console.clear()
+        self.console.append(f"Profil: {profile_name}")
+        self.console.append("\U0001f53d Téléchargement des images...")
         self.start_btn.setEnabled(False)
         self.progress.setValue(0)
         self.progress.show()
-        self.worker = ScrapeWorker(url, css, "images")
+        self.worker = ScrapeWorker(url, css, folder)
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.scrape_finished)
         self.worker.start()
@@ -141,16 +162,40 @@ class CombinedScrapeWidget(QWidget):
     @Slot(int, int)
     def update_progress(self, current: int, total: int) -> None:
         if total:
-            pct = int(current / total * 100)
+            pct = int(current / total * 33)
             self.progress.setValue(pct)
 
     @Slot(dict)
     def scrape_finished(self, result: dict) -> None:
         self.scrape_folder = Path(result.get("folder", ""))
+        self.progress.setValue(33)
+        self.console.append("\U0001f50d Récupération des variantes...")
         try:
             _, variants = extract_variants_with_images(self.url_edit.text().strip())
         except Exception:  # pragma: no cover - network issues
             variants = {}
+        self.progress.setValue(66)
+        self.console.append("\U0001f517 Génération des liens...")
         self.populate_table(variants)
+        self.progress.setValue(100)
+        self.console.append("✅ Terminé")
         self.progress.hide()
         self.start_btn.setEnabled(True)
+
+    # ------------------------------------------------------------------
+    def select_folder(self) -> None:
+        folder = QFileDialog.getExistingDirectory(self, "Choisir un dossier")
+        if folder:
+            self.folder_edit.setText(folder)
+
+    @Slot()
+    def refresh_profiles(self) -> None:
+        self.profile_manager = ProfileManager()
+        self.profile_combo.clear()
+        self.profile_combo.addItems(sorted(self.profile_manager.profiles))
+
+    @Slot(str)
+    def set_selected_profile(self, name: str) -> None:
+        index = self.profile_combo.findText(name)
+        if index >= 0:
+            self.profile_combo.setCurrentIndex(index)

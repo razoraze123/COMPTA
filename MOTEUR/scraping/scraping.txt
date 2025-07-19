@@ -620,6 +620,8 @@ class Profile:
     """Simple container for a scraping profile."""
 
     css_selector: str
+    domain: str = "https://www.planetebob.fr"
+    date: str = "2025/07"
 
 
 class ProfileManager:
@@ -641,9 +643,16 @@ class ProfileManager:
                 with self.path.open("r", encoding="utf-8") as fh:
                     data = json.load(fh)
                 if isinstance(data, dict):
-                    self.profiles = {
-                        str(k): Profile(str(v)) for k, v in data.items()
-                    }
+                    self.profiles = {}
+                    for k, v in data.items():
+                        if isinstance(v, str):
+                            self.profiles[str(k)] = Profile(v)
+                        elif isinstance(v, dict):
+                            self.profiles[str(k)] = Profile(
+                                v.get("css", IMAGES_DEFAULT_SELECTOR),
+                                v.get("domain", "https://www.planetebob.fr"),
+                                v.get("date", "2025/07"),
+                            )
                 else:
                     self.profiles = {}
             except Exception:
@@ -656,7 +665,14 @@ class ProfileManager:
         """Write current profiles to the JSON file."""
         with self.path.open("w", encoding="utf-8") as fh:
             json.dump(
-                {name: p.css_selector for name, p in self.profiles.items()},
+                {
+                    name: {
+                        "css": p.css_selector,
+                        "domain": p.domain,
+                        "date": p.date,
+                    }
+                    for name, p in self.profiles.items()
+                },
                 fh,
                 ensure_ascii=False,
                 indent=2,
@@ -666,9 +682,9 @@ class ProfileManager:
         """Return the profile for *name* if present."""
         return self.profiles.get(name)
 
-    def add_or_update_profile(self, name: str, css: str) -> None:
-        """Add or update *name* with *css* and persist it."""
-        self.profiles[name] = Profile(css)
+    def add_or_update_profile(self, name: str, css: str, domain: str, date: str) -> None:
+        """Add or update *name* with profile parameters and persist it."""
+        self.profiles[name] = Profile(css, domain, date)
         self.save_profiles()
 
     def remove_profile(self, name: str) -> None:
@@ -1174,19 +1190,23 @@ class VariantComparisonWidget(QWidget):
 
         layout = QVBoxLayout(self)
 
+        self.profile_manager = ProfileManager()
+
         self.url_edit = QLineEdit()
         self.url_edit.setPlaceholderText("Lien produit concurrent")
         layout.addWidget(self.url_edit)
 
-        self.domain_label = QLabel("Domaine WooCommerce :")
-        self.domain_edit = QLineEdit("https://www.planetebob.fr")
-        layout.addWidget(self.domain_label)
-        layout.addWidget(self.domain_edit)
+        self.profile_combo = QComboBox()
+        self.profile_combo.addItems(sorted(self.profile_manager.profiles))
+        layout.addWidget(self.profile_combo)
 
-        self.date_label = QLabel("Date (YYYY/MM) :")
-        self.date_edit = QLineEdit("2025/07")
-        layout.addWidget(self.date_label)
-        layout.addWidget(self.date_edit)
+        folder_row = QHBoxLayout()
+        self.folder_edit = QLineEdit()
+        self.folder_edit.setPlaceholderText("Dossier images")
+        folder_row.addWidget(self.folder_edit)
+        self.browse_btn = QPushButton("\ud83d\udcc1")
+        folder_row.addWidget(self.browse_btn)
+        layout.addLayout(folder_row)
 
         self.folder_btn = QPushButton("Choisir le dossier d'images")
         self.folder_btn.clicked.connect(self.choose_folder)
@@ -1303,7 +1323,7 @@ class CombinedScrapeWidget(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        # widgets setup (url, domain, date, table)
+        # widgets setup (url, profile selection, folder, console, table)
         ...
 
     def valid_date(self, text: str) -> bool:
@@ -1312,10 +1332,10 @@ class CombinedScrapeWidget(QWidget):
     def generate_woo_links(self) -> list[str]:
         if not self.scrape_folder:
             return []
-        date_path = self.date_edit.text().strip()
+        date_path = self.date.strip()
         if not self.valid_date(date_path):
             return []
-        base_url = self.domain_edit.text().strip().rstrip("/")
+        base_url = self.domain.strip().rstrip("/")
         links = [
             f"{base_url}/wp-content/uploads/{date_path}/{f.name}"
             for f in sorted(self.scrape_folder.iterdir())

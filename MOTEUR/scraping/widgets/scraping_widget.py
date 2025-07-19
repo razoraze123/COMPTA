@@ -84,6 +84,9 @@ class ScrapingImagesWidget(QWidget):
         self.worker: ScrapeWorker | None = None
         self.scrape_folder: Path | None = None
         self.profile_manager = ProfileManager()
+        self.pending_urls: list[str] = []
+        self.current_css = ""
+        self.current_folder = ""
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -192,23 +195,32 @@ class ScrapingImagesWidget(QWidget):
     @Slot()
     def start_scraping(self) -> None:
         """Launch the scraping process in a background thread."""
-        url = self.url_edit.text().strip()
-        if not url:
+        url_text = self.url_edit.text().strip()
+        if not url_text:
             self.console.append("⚠️ URL manquante")
             return
 
+        self.pending_urls = [u for u in url_text.split() if u]
         profile_name = self.profile_combo.currentText()
         profile = self.profile_manager.get_profile(profile_name)
-        css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
-        folder = self.folder_edit.text().strip() or "images"
+        self.current_css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
+        self.current_folder = self.folder_edit.text().strip() or "images"
 
         self.console.clear()
-        self.console.append(f"Profil: {profile_name} - Sélecteur: {css}")
+        self.console.append(f"Profil: {profile_name} - Sélecteur: {self.current_css}")
         self.progress_bar.setValue(0)
         self.progress_bar.show()
         self.start_btn.setEnabled(False)
 
-        self.worker = ScrapeWorker(url, css, folder)
+        self._start_next_url()
+
+    def _start_next_url(self) -> None:
+        if not self.pending_urls:
+            self.start_btn.setEnabled(True)
+            return
+        url = self.pending_urls.pop(0)
+        self.console.append(url)
+        self.worker = ScrapeWorker(url, self.current_css, self.current_folder)
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.scraping_finished)
         self.worker.start()
@@ -226,4 +238,4 @@ class ScrapingImagesWidget(QWidget):
         self.console.append("✅ Terminé")
         if self.scrape_folder and self.scrape_folder.exists():
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.scrape_folder)))
-        self.start_btn.setEnabled(True)
+        self._start_next_url()

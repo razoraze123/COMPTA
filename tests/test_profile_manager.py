@@ -141,3 +141,29 @@ def test_profile_widget_updates_scraping_widget(tmp_path: Path, monkeypatch) -> 
 
     items = [scrap_w.profile_combo.itemText(i) for i in range(scrap_w.profile_combo.count())]
     assert "new" in items
+
+
+def test_url_file_browse_sets_path(tmp_path: Path, monkeypatch) -> None:
+    import os
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    app = QApplication.instance() or QApplication([])
+
+    json_path = tmp_path / "profiles.json"
+    monkeypatch.setattr(pw, "ProfileManager", lambda *a, **k: ProfileManager(json_path))
+
+    widget = pw.ProfileWidget()
+
+    dest = tmp_path / "links.txt"
+    dest.write_text("http://example.com")
+
+    def fake_open(parent, title, d, filt):
+        return str(dest), "Text files (*.txt)"
+
+    monkeypatch.setattr(
+        "MOTEUR.scraping.widgets.profile_widget.QFileDialog.getOpenFileName",
+        fake_open,
+    )
+
+    widget.select_url_file()
+
+    assert widget.url_file_edit.text() == str(dest)

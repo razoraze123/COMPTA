@@ -123,3 +123,12 @@ def test_profile_url_loaded(tmp_path: Path):
     widget.set_selected_profile("file")
 
     assert widget.url_edit.text() == "http://example.com"
+
+
+def test_toggle_comp_links_visibility():
+    app = QApplication.instance() or QApplication([])
+    widget = CombinedScrapeWidget()
+    widget.toggle_comp_links(False)
+    assert widget.url_edit.isHidden()
+    widget.toggle_comp_links(True)
+    assert not widget.url_edit.isHidden()

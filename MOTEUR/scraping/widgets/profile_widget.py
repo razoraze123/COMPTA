@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -10,6 +11,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QMessageBox,
+    QFileDialog,
 )
 from PySide6.QtCore import Signal
 
@@ -52,9 +54,14 @@ class ProfileWidget(QWidget):
         self.date_edit.setPlaceholderText("Date YYYY/MM")
         form_layout.addWidget(self.date_edit)
 
+        url_container = QHBoxLayout()
         self.url_file_edit = QLineEdit()
         self.url_file_edit.setPlaceholderText("Fichier URL")
-        form_layout.addWidget(self.url_file_edit)
+        url_container.addWidget(self.url_file_edit)
+        self.url_file_btn = QPushButton("...")
+        self.url_file_btn.clicked.connect(self.select_url_file)
+        url_container.addWidget(self.url_file_btn)
+        form_layout.addLayout(url_container)
 
         main_layout.addLayout(form_layout)
 
@@ -154,3 +161,14 @@ class ProfileWidget(QWidget):
         name = self.name_edit.text().strip()
         if name:
             self.profile_chosen.emit(name)
+
+    def select_url_file(self) -> None:
+        """Open a file dialog to select a text file containing URLs."""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Choisir un fichier",
+            str(Path.home()),
+            "Text files (*.txt);;All files (*)",
+        )
+        if path:
+            self.url_file_edit.setText(path)

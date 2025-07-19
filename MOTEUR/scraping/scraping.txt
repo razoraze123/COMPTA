@@ -1366,6 +1366,23 @@ class CombinedScrapeWidget(QWidget):
             self.table.setItem(row, 1, QTableWidgetItem(woo))
             self.table.setItem(row, 2, QTableWidgetItem(""))
 
+    def export_csv(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Exporter CSV", str(Path.home()), "CSV (*.csv)"
+        )
+        if not path:
+            return
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(["Variante", "Lien Woo"])
+            for i in range(self.table.rowCount()):
+                var = self.table.item(i, 0)
+                woo = self.table.item(i, 1)
+                writer.writerow([
+                    var.text() if var else "",
+                    woo.text() if woo else "",
+                ])
+
 # Woo links matched to variants by keyword in file names
 
 ===== MOTEUR/scraping/widgets/settings_widget.py =====

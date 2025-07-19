@@ -129,6 +129,9 @@ Les liens WooCommerce sont appariés aux variantes en cherchant un mot clé
 dans le nom du fichier d'image. Par exemple, le fichier `camel.webp` sera
 automatiquement associé à la variante « Camel ».
 
+Un bouton « Exporter CSV » permet d'enregistrer les couples Variante/Lien Woo
+dans un fichier pour une utilisation ultérieure.
+
 ## 🧪 Lancer les tests
 
 Après avoir installé les dépendances du projet avec :

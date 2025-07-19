@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QComboBox,
 )
+import csv
 
 from .scraping_widget import ScrapeWorker
 from ..scraping_variantes import extract_variants_with_images
@@ -89,6 +90,13 @@ class CombinedScrapeWidget(QWidget):
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table)
 
+        btn_row = QHBoxLayout()
+        export_btn = QPushButton("Exporter CSV")
+        export_btn.clicked.connect(self.export_csv)
+        btn_row.addStretch()
+        btn_row.addWidget(export_btn)
+        layout.addLayout(btn_row)
+
         self.scrape_folder: Path | None = None
         self.worker: ScrapeWorker | None = None
         self.domain: str = ""
@@ -135,6 +143,23 @@ class CombinedScrapeWidget(QWidget):
             self.table.setItem(row, 0, QTableWidgetItem(""))
             self.table.setItem(row, 1, QTableWidgetItem(woo))
             self.table.setItem(row, 2, QTableWidgetItem(""))
+
+    def export_csv(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Exporter CSV", str(Path.home()), "CSV (*.csv)"
+        )
+        if not path:
+            return
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(["Variante", "Lien Woo"])
+            for row in range(self.table.rowCount()):
+                var_item = self.table.item(row, 0)
+                woo_item = self.table.item(row, 1)
+                writer.writerow([
+                    var_item.text() if var_item else "",
+                    woo_item.text() if woo_item else "",
+                ])
 
     @Slot()
     def start_process(self) -> None:

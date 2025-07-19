@@ -174,7 +174,8 @@ class CombinedScrapeWidget(QWidget):
         profile = self.profile_manager.get_profile(profile_name)
         if self.comp_links_enabled and not url and profile and profile.url_file:
             try:
-                url = Path(profile.url_file).read_text(encoding="utf-8").strip()
+                # UTF-8 with BOM is accepted; read_text("utf-8-sig") strips it
+                url = Path(profile.url_file).read_text(encoding="utf-8-sig").strip()
                 self.url_edit.setText(url)
             except Exception:
                 url = ""
@@ -247,7 +248,8 @@ class CombinedScrapeWidget(QWidget):
         profile = self.profile_manager.get_profile(name)
         if profile and profile.url_file:
             try:
-                url = Path(profile.url_file).read_text(encoding="utf-8").strip()
+                # Handle optional BOM from Windows editors
+                url = Path(profile.url_file).read_text(encoding="utf-8-sig").strip()
                 self.url_edit.setText(url)
             except Exception:
                 pass

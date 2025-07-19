@@ -22,6 +22,7 @@ except ModuleNotFoundError:
     sys.exit(1)
 
 from MOTEUR.scraping.widgets.scrap_widget import ScrapWidget
+from MOTEUR.scraping.widgets.settings_widget import ScrapingSettingsWidget
 from MOTEUR.compta.achats.widget import AchatWidget
 from MOTEUR.compta.ventes.widget import VenteWidget
 from MOTEUR.compta.accounting.widget import AccountWidget
@@ -273,6 +274,16 @@ class MainWindow(QMainWindow):
         )
         scrap_section.add_widget(btn)
         self.button_group.append(btn)
+
+        self.scrap_settings_btn = SidebarButton(
+            "Param\u00e8tres Scraping",
+            icon_path=str(BASE_DIR / "icons" / "settings.svg"),
+        )
+        self.scrap_settings_btn.clicked.connect(
+            lambda _, b=self.scrap_settings_btn: self.show_scraping_settings_page(b)
+        )
+        scrap_section.add_widget(self.scrap_settings_btn)
+        self.button_group.append(self.scrap_settings_btn)
         nav_layout.addWidget(scrap_section)
 
         nav_layout.addStretch()
@@ -305,6 +316,15 @@ class MainWindow(QMainWindow):
         # Page regrouping scraping images and variants
         self.scrap_page = ScrapWidget()
         self.stack.addWidget(self.scrap_page)
+
+        # Settings page for scraping modules
+        self.scraping_settings_page = ScrapingSettingsWidget(
+            self.scrap_page.modules_order
+        )
+        self.scraping_settings_page.module_toggled.connect(
+            self.scrap_page.toggle_module
+        )
+        self.stack.addWidget(self.scraping_settings_page)
 
         self.profile_page.profile_chosen.connect(
             self.scrap_page.images_widget.set_selected_profile
@@ -458,6 +478,12 @@ class MainWindow(QMainWindow):
         self.clear_selection()
         button.setChecked(True)
         self.stack.setCurrentWidget(self.suppliers_page)
+
+    def show_scraping_settings_page(self, button: SidebarButton) -> None:
+        """Display the scraping settings page."""
+        self.clear_selection()
+        button.setChecked(True)
+        self.stack.setCurrentWidget(self.scraping_settings_page)
 
     def show_ventes_page(self, button: SidebarButton) -> None:
         """Display the ventes page."""

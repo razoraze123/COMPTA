@@ -1,4 +1,12 @@
 Code listing for scraping module
+===== Changelog =====
+- Ajout du chargement d'URLs depuis un fichier de profil
+- Prise en charge du scraping de plusieurs URLs à la suite
+- Suppression du champ de lien concurrent dans le widget combiné
+- Correction automatique des sélecteurs CSS invalides
+- Export CSV des variantes à partir du widget combiné
+- Onglet paramètres pour activer ou désactiver les modules
+
 
 ===== MOTEUR/scraping/__init__.py =====
 

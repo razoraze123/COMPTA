@@ -70,3 +70,18 @@ def test_populate_table_filename_match(tmp_path: Path):
     }
     assert mapping["Camel"].endswith("camel.webp")
     assert mapping["Dog"].endswith("dog.webp")
+
+
+def test_populate_table_hyphen_and_space_match(tmp_path: Path):
+    (tmp_path / "bob-bleu-ciel.webp").touch()
+    (tmp_path / "bob-vert-clair.webp").touch()
+    widget = setup_widget(tmp_path)
+    data = {"Bleu ciel": "foo", "Vert clair": "bar"}
+    widget.populate_table(data)
+
+    mapping = {
+        widget.table.item(i, 0).text(): widget.table.item(i, 1).text()
+        for i in range(widget.table.rowCount())
+    }
+    assert mapping["Bleu ciel"].endswith("bob-bleu-ciel.webp")
+    assert mapping["Vert clair"].endswith("bob-vert-clair.webp")

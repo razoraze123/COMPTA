@@ -324,9 +324,6 @@ class MainWindow(QMainWindow):
         self.scraping_settings_page.module_toggled.connect(
             self.scrap_page.toggle_module
         )
-        self.scraping_settings_page.comp_links_toggled.connect(
-            self.scrap_page.combined_widget.toggle_comp_links
-        )
         self.stack.addWidget(self.scraping_settings_page)
 
         self.profile_page.profile_chosen.connect(

@@ -8,7 +8,6 @@ from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QPushButton,
     QProgressBar,
@@ -49,11 +48,8 @@ class CombinedScrapeWidget(QWidget):
         layout = QVBoxLayout(self)
 
         self.profile_manager = ProfileManager()
-
-        self.url_edit = QLineEdit()
-        self.url_edit.setPlaceholderText("Lien produit concurrent")
-        layout.addWidget(self.url_edit)
-        self.comp_links_enabled = True
+        self.pending_urls: list[str] = []
+        self.current_url: str = ""
 
         self.profile_combo = QComboBox()
         self.profile_combo.addItems(sorted(self.profile_manager.profiles))
@@ -122,10 +118,6 @@ class CombinedScrapeWidget(QWidget):
                 )
         return links
 
-    def toggle_comp_links(self, enabled: bool) -> None:
-        """Show or hide the competitor URL field."""
-        self.comp_links_enabled = enabled
-        self.url_edit.setVisible(enabled)
 
     def populate_table(self, variants: dict[str, str]) -> None:
         woo_links = self.generate_woo_links()
@@ -169,30 +161,40 @@ class CombinedScrapeWidget(QWidget):
 
     @Slot()
     def start_process(self) -> None:
-        url = self.url_edit.text().strip()
         profile_name = self.profile_combo.currentText()
         profile = self.profile_manager.get_profile(profile_name)
-        if self.comp_links_enabled and not url and profile and profile.url_file:
+        url_file = profile.url_file if profile else ""
+        urls: list[str] = []
+        if url_file:
             try:
-                # UTF-8 with BOM is accepted; read_text("utf-8-sig") strips it
-                url = Path(profile.url_file).read_text(encoding="utf-8-sig").strip()
-                self.url_edit.setText(url)
+                text = Path(url_file).read_text(encoding="utf-8-sig")
+                urls = [u.strip() for u in text.splitlines() if u.strip()]
             except Exception:
-                url = ""
-        if self.comp_links_enabled and not url:
+                urls = []
+        if not urls:
             return
-        css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
+
+        self.pending_urls = urls
+        self.css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
         self.domain = profile.domain if profile else "https://www.planetebob.fr"
         self.date = profile.date if profile else "2025/07"
-        folder = self.folder_edit.text().strip() or "images"
+        self.folder = self.folder_edit.text().strip() or "images"
 
         self.console.clear()
         self.console.append(f"Profil: {profile_name}")
-        self.console.append("\U0001f53d Téléchargement des images...")
+        self.table.setRowCount(0)
         self.start_btn.setEnabled(False)
         self.progress.setValue(0)
         self.progress.show()
-        self.worker = ScrapeWorker(url, css, folder)
+        self._start_next_url()
+
+    def _start_next_url(self) -> None:
+        if not self.pending_urls:
+            return
+        url = self.pending_urls.pop(0)
+        self.current_url = url
+        self.console.append(url)
+        self.worker = ScrapeWorker(url, self.css, self.folder)
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.scrape_finished)
         self.worker.start()
@@ -207,24 +209,21 @@ class CombinedScrapeWidget(QWidget):
     def scrape_finished(self, result: dict) -> None:
         self.scrape_folder = Path(result.get("folder", ""))
         self.progress.setValue(33)
-        if not self.comp_links_enabled:
-            self.progress.setValue(100)
-            self.console.append("✅ Terminé")
-            self.progress.hide()
-            self.start_btn.setEnabled(True)
-            return
         self.console.append("\U0001f50d Récupération des variantes...")
         try:
-            _, variants = extract_variants_with_images(self.url_edit.text().strip())
+            _, variants = extract_variants_with_images(self.current_url)
         except Exception:  # pragma: no cover - network issues
             variants = {}
         self.progress.setValue(66)
         self.console.append("\U0001f517 Génération des liens...")
         self.populate_table(variants)
-        self.progress.setValue(100)
-        self.console.append("✅ Terminé")
-        self.progress.hide()
-        self.start_btn.setEnabled(True)
+        if self.pending_urls:
+            self._start_next_url()
+        else:
+            self.progress.setValue(100)
+            self.console.append("✅ Terminé")
+            self.progress.hide()
+            self.start_btn.setEnabled(True)
 
     # ------------------------------------------------------------------
     def select_folder(self) -> None:
@@ -245,11 +244,4 @@ class CombinedScrapeWidget(QWidget):
         index = self.profile_combo.findText(name)
         if index >= 0:
             self.profile_combo.setCurrentIndex(index)
-        profile = self.profile_manager.get_profile(name)
-        if profile and profile.url_file:
-            try:
-                # Handle optional BOM from Windows editors
-                url = Path(profile.url_file).read_text(encoding="utf-8-sig").strip()
-                self.url_edit.setText(url)
-            except Exception:
-                pass
+        # No URL field anymore

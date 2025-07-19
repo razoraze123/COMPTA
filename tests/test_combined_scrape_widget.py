@@ -10,7 +10,7 @@ def setup_widget(tmp_path: Path) -> CombinedScrapeWidget:
     widget = CombinedScrapeWidget()
     widget.scrape_folder = tmp_path
     widget.profile_manager.profiles["test"] = Profile(
-        "img", "https://shop.com", "2024/05"
+        "img", "https://shop.com", "2024/05", ""
     )
     widget.profile_combo.clear()
     widget.profile_combo.addItem("test")
@@ -110,3 +110,16 @@ def test_export_csv(tmp_path: Path, monkeypatch):
         lines = [l.strip() for l in fh]
 
     assert lines == ["Variante,Lien Woo", "Red,https://shop.com/red.jpg"]
+
+
+def test_profile_url_loaded(tmp_path: Path):
+    url_file = tmp_path / "url.txt"
+    url_file.write_text("http://example.com")
+    widget = setup_widget(tmp_path)
+    widget.profile_manager.profiles["file"] = Profile(
+        "img", "https://shop.com", "2024/05", str(url_file)
+    )
+    widget.profile_combo.addItem("file")
+    widget.set_selected_profile("file")
+
+    assert widget.url_edit.text() == "http://example.com"

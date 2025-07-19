@@ -164,10 +164,16 @@ class CombinedScrapeWidget(QWidget):
     @Slot()
     def start_process(self) -> None:
         url = self.url_edit.text().strip()
-        if not url:
-            return
         profile_name = self.profile_combo.currentText()
         profile = self.profile_manager.get_profile(profile_name)
+        if not url and profile and profile.url_file:
+            try:
+                url = Path(profile.url_file).read_text(encoding="utf-8").strip()
+                self.url_edit.setText(url)
+            except Exception:
+                url = ""
+        if not url:
+            return
         css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
         self.domain = profile.domain if profile else "https://www.planetebob.fr"
         self.date = profile.date if profile else "2025/07"
@@ -218,9 +224,18 @@ class CombinedScrapeWidget(QWidget):
         self.profile_manager = ProfileManager()
         self.profile_combo.clear()
         self.profile_combo.addItems(sorted(self.profile_manager.profiles))
+        if self.profile_combo.count():
+            self.set_selected_profile(self.profile_combo.currentText())
 
     @Slot(str)
     def set_selected_profile(self, name: str) -> None:
         index = self.profile_combo.findText(name)
         if index >= 0:
             self.profile_combo.setCurrentIndex(index)
+        profile = self.profile_manager.get_profile(name)
+        if profile and profile.url_file:
+            try:
+                url = Path(profile.url_file).read_text(encoding="utf-8").strip()
+                self.url_edit.setText(url)
+            except Exception:
+                pass

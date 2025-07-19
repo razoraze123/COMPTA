@@ -52,6 +52,10 @@ class ProfileWidget(QWidget):
         self.date_edit.setPlaceholderText("Date YYYY/MM")
         form_layout.addWidget(self.date_edit)
 
+        self.url_file_edit = QLineEdit()
+        self.url_file_edit.setPlaceholderText("Fichier URL")
+        form_layout.addWidget(self.url_file_edit)
+
         main_layout.addLayout(form_layout)
 
         # Buttons
@@ -84,6 +88,7 @@ class ProfileWidget(QWidget):
             self.css_edit.setText(css)
             self.domain_edit.setText(profile.domain if profile else "")
             self.date_edit.setText(profile.date if profile else "")
+            self.url_file_edit.setText(profile.url_file if profile else "")
 
     def add_profile(self) -> None:
         name = self.name_edit.text().strip()
@@ -93,10 +98,11 @@ class ProfileWidget(QWidget):
         css = self.css_edit.text().strip()
         domain = self.domain_edit.text().strip()
         date = self.date_edit.text().strip()
+        url_file = self.url_file_edit.text().strip()
         if name in self.manager.profiles:
             QMessageBox.information(self, "Profil", "Ce profil existe déjà")
             return
-        self.manager.add_or_update_profile(name, css, domain, date)
+        self.manager.add_or_update_profile(name, css, domain, date, url_file)
         self.profile_list.addItem(name)
         self.profile_list.setCurrentRow(self.profile_list.count() - 1)
         self.profiles_updated.emit()
@@ -109,7 +115,8 @@ class ProfileWidget(QWidget):
         css = self.css_edit.text().strip()
         domain = self.domain_edit.text().strip()
         date = self.date_edit.text().strip()
-        self.manager.add_or_update_profile(name, css, domain, date)
+        url_file = self.url_file_edit.text().strip()
+        self.manager.add_or_update_profile(name, css, domain, date, url_file)
         # Ensure the list has this profile
         for i in range(self.profile_list.count()):
             if self.profile_list.item(i).text() == name:
@@ -137,6 +144,7 @@ class ProfileWidget(QWidget):
         self.css_edit.clear()
         self.domain_edit.clear()
         self.date_edit.clear()
+        self.url_file_edit.clear()
         if self.profile_list.count():
             self.profile_list.setCurrentRow(0)
         self.profiles_updated.emit()

@@ -85,3 +85,28 @@ def test_populate_table_hyphen_and_space_match(tmp_path: Path):
     }
     assert mapping["Bleu ciel"].endswith("bob-bleu-ciel.webp")
     assert mapping["Vert clair"].endswith("bob-vert-clair.webp")
+
+
+def test_export_csv(tmp_path: Path, monkeypatch):
+    widget = setup_widget(tmp_path)
+    widget.table.setRowCount(0)
+    widget.table.insertRow(0)
+    widget.table.setItem(0, 0, QTableWidgetItem("Red"))
+    widget.table.setItem(0, 1, QTableWidgetItem("https://shop.com/red.jpg"))
+
+    dest = tmp_path / "out.csv"
+
+    def fake_get_save(parent, title, d, filt):
+        return str(dest), "CSV (*.csv)"
+
+    monkeypatch.setattr(
+        "MOTEUR.scraping.widgets.combined_scrape_widget.QFileDialog.getSaveFileName",
+        fake_get_save,
+    )
+
+    widget.export_csv()
+
+    with dest.open() as fh:
+        lines = [l.strip() for l in fh]
+
+    assert lines == ["Variante,Lien Woo", "Red,https://shop.com/red.jpg"]

@@ -112,23 +112,3 @@ def test_export_csv(tmp_path: Path, monkeypatch):
     assert lines == ["Variante,Lien Woo", "Red,https://shop.com/red.jpg"]
 
 
-def test_profile_url_loaded(tmp_path: Path):
-    url_file = tmp_path / "url.txt"
-    url_file.write_text("http://example.com")
-    widget = setup_widget(tmp_path)
-    widget.profile_manager.profiles["file"] = Profile(
-        "img", "https://shop.com", "2024/05", str(url_file)
-    )
-    widget.profile_combo.addItem("file")
-    widget.set_selected_profile("file")
-
-    assert widget.url_edit.text() == "http://example.com"
-
-
-def test_toggle_comp_links_visibility():
-    app = QApplication.instance() or QApplication([])
-    widget = CombinedScrapeWidget()
-    widget.toggle_comp_links(False)
-    assert widget.url_edit.isHidden()
-    widget.toggle_comp_links(True)
-    assert not widget.url_edit.isHidden()

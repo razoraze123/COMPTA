@@ -40,6 +40,7 @@ def test_default_profile_creation(tmp_path: Path) -> None:
             "css": IMAGES_DEFAULT_SELECTOR,
             "domain": "https://www.planetebob.fr",
             "date": "2025/07",
+            "url_file": "",
         }
     }
 

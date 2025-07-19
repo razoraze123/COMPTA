@@ -622,6 +622,7 @@ class Profile:
     css_selector: str
     domain: str = "https://www.planetebob.fr"
     date: str = "2025/07"
+    url_file: str = ""
 
 
 class ProfileManager:
@@ -652,6 +653,7 @@ class ProfileManager:
                                 v.get("css", IMAGES_DEFAULT_SELECTOR),
                                 v.get("domain", "https://www.planetebob.fr"),
                                 v.get("date", "2025/07"),
+                                v.get("url_file", ""),
                             )
                 else:
                     self.profiles = {}
@@ -670,6 +672,7 @@ class ProfileManager:
                         "css": p.css_selector,
                         "domain": p.domain,
                         "date": p.date,
+                        "url_file": p.url_file,
                     }
                     for name, p in self.profiles.items()
                 },
@@ -682,9 +685,11 @@ class ProfileManager:
         """Return the profile for *name* if present."""
         return self.profiles.get(name)
 
-    def add_or_update_profile(self, name: str, css: str, domain: str, date: str) -> None:
+    def add_or_update_profile(
+        self, name: str, css: str, domain: str, date: str, url_file: str = ""
+    ) -> None:
         """Add or update *name* with profile parameters and persist it."""
-        self.profiles[name] = Profile(css, domain, date)
+        self.profiles[name] = Profile(css, domain, date, url_file)
         self.save_profiles()
 
     def remove_profile(self, name: str) -> None:
@@ -780,10 +785,13 @@ class ProfileWidget(QWidget):
             QMessageBox.warning(self, "Profil", "Nom manquant")
             return
         css = self.css_edit.text().strip()
+        domain = self.domain_edit.text().strip()
+        date = self.date_edit.text().strip()
+        url_file = self.url_file_edit.text().strip()
         if name in self.manager.profiles:
             QMessageBox.information(self, "Profil", "Ce profil existe déjà")
             return
-        self.manager.add_or_update_profile(name, css)
+        self.manager.add_or_update_profile(name, css, domain, date, url_file)
         self.profile_list.addItem(name)
         self.profile_list.setCurrentRow(self.profile_list.count() - 1)
 
@@ -793,7 +801,10 @@ class ProfileWidget(QWidget):
             QMessageBox.warning(self, "Profil", "Nom manquant")
             return
         css = self.css_edit.text().strip()
-        self.manager.add_or_update_profile(name, css)
+        domain = self.domain_edit.text().strip()
+        date = self.date_edit.text().strip()
+        url_file = self.url_file_edit.text().strip()
+        self.manager.add_or_update_profile(name, css, domain, date, url_file)
         # Ensure the list has this profile
         for i in range(self.profile_list.count()):
             if self.profile_list.item(i).text() == name:
@@ -818,6 +829,9 @@ class ProfileWidget(QWidget):
                 break
         self.name_edit.clear()
         self.css_edit.clear()
+        self.domain_edit.clear()
+        self.date_edit.clear()
+        self.url_file_edit.clear()
         if self.profile_list.count():
             self.profile_list.setCurrentRow(0)
 

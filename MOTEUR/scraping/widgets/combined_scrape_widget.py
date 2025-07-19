@@ -53,6 +53,7 @@ class CombinedScrapeWidget(QWidget):
         self.url_edit = QLineEdit()
         self.url_edit.setPlaceholderText("Lien produit concurrent")
         layout.addWidget(self.url_edit)
+        self.comp_links_enabled = True
 
         self.profile_combo = QComboBox()
         self.profile_combo.addItems(sorted(self.profile_manager.profiles))
@@ -121,6 +122,11 @@ class CombinedScrapeWidget(QWidget):
                 )
         return links
 
+    def toggle_comp_links(self, enabled: bool) -> None:
+        """Show or hide the competitor URL field."""
+        self.comp_links_enabled = enabled
+        self.url_edit.setVisible(enabled)
+
     def populate_table(self, variants: dict[str, str]) -> None:
         woo_links = self.generate_woo_links()
         remaining = list(woo_links)
@@ -166,13 +172,13 @@ class CombinedScrapeWidget(QWidget):
         url = self.url_edit.text().strip()
         profile_name = self.profile_combo.currentText()
         profile = self.profile_manager.get_profile(profile_name)
-        if not url and profile and profile.url_file:
+        if self.comp_links_enabled and not url and profile and profile.url_file:
             try:
                 url = Path(profile.url_file).read_text(encoding="utf-8").strip()
                 self.url_edit.setText(url)
             except Exception:
                 url = ""
-        if not url:
+        if self.comp_links_enabled and not url:
             return
         css = profile.css_selector if profile else IMAGES_DEFAULT_SELECTOR
         self.domain = profile.domain if profile else "https://www.planetebob.fr"
@@ -200,6 +206,12 @@ class CombinedScrapeWidget(QWidget):
     def scrape_finished(self, result: dict) -> None:
         self.scrape_folder = Path(result.get("folder", ""))
         self.progress.setValue(33)
+        if not self.comp_links_enabled:
+            self.progress.setValue(100)
+            self.console.append("✅ Terminé")
+            self.progress.hide()
+            self.start_btn.setEnabled(True)
+            return
         self.console.append("\U0001f50d Récupération des variantes...")
         try:
             _, variants = extract_variants_with_images(self.url_edit.text().strip())

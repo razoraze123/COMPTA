@@ -25,6 +25,7 @@ from .constants import IMAGES_DEFAULT_SELECTOR as DEFAULT_CSS_SELECTOR
 from .constants import USER_AGENT
 from .driver import setup_driver
 from .utils import check_robots, exhaust_carousel
+from ..scraping_variantes import extract_variants_with_images
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +116,32 @@ def download_images(
             )
         except TimeoutException:
             logger.error("Timeout waiting for elements with selector %s", css_selector)
+            driver.quit()
+            try:
+                title, mapping = extract_variants_with_images(url)
+            except Exception as exc:
+                logger.error("Variant fallback failed: %s", exc)
+                return {"folder": folder, "first_image": first_image}
+
+            folder = _safe_folder(title, parent_dir)
+            for idx, img_url in enumerate(mapping.values(), start=1):
+                filename = os.path.basename(img_url.split("?")[0])
+                path = dl_helpers.unique_path(folder, filename, reserved_paths)
+                try:
+                    dl_helpers.download_binary(img_url, path, user_agent)
+                    if use_alt_json:
+                        path = rename_helpers.rename_with_alt(
+                            path, sentences, warned_missing, reserved_paths
+                        )
+                    if first_image is None:
+                        first_image = path
+                    downloaded += 1
+                except Exception as exc:  # pragma: no cover - network issues
+                    logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
+                    skipped += 1
+            logger.info(
+                "\n\U0001f5bc %d images téléchargées via variante", downloaded
+            )
             return {"folder": folder, "first_image": first_image}
 
         product_name = _find_product_name(driver)

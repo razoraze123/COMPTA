@@ -105,5 +105,8 @@ def handle_image(
 
     raw_filename = os.path.basename(src.split("?")[0])
     filename = re.sub(r"-\d+(?=\.\w+$)", "", raw_filename)
+    base, ext = os.path.splitext(filename)
+    base = re.sub(r"\d+", "", base)
+    filename = f"{base}{ext}"
     target = unique_path(folder, filename, reserved)
     return target, src

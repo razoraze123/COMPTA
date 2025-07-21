@@ -38,6 +38,19 @@ def test_unique_path_collision(tmp_path: Path) -> None:
     assert second != first
 
 
+def test_handle_image_strips_digits(tmp_path: Path) -> None:
+    elem = DummyElement(
+        {
+            "src": "https://example.com/bob-tissu-eponge-blanc-451.jpg",
+            "naturalWidth": "300",
+            "naturalHeight": "300",
+        }
+    )
+    path, url = handle_image(elem, tmp_path, 1, USER_AGENT, set())
+    assert url == "https://example.com/bob-tissu-eponge-blanc-451.jpg"
+    assert path.name == "bob-tissu-eponge-blanc.jpg"
+
+
 def test_retry_on_stale() -> None:
     class Obj:
         def __init__(self):

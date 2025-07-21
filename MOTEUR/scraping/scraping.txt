@@ -156,6 +156,9 @@ def handle_image(
 
     raw_filename = os.path.basename(src.split("?")[0])
     filename = re.sub(r"-\d+(?=\.\w+$)", "", raw_filename)
+    base, ext = os.path.splitext(filename)
+    base = re.sub(r"\d+", "", base)
+    filename = f"{base}{ext}"
     target = unique_path(folder, filename, reserved)
     return target, src
 
@@ -1355,7 +1358,8 @@ class CombinedScrapeWidget(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         # widgets setup (url, profile selection, folder, console, table)
-        ...
+        # a copy button allows to copy the console output and a log handler
+        # redirects Python logs to the text area
 
     def valid_date(self, text: str) -> bool:
         return bool(re.fullmatch(r"\d{4}/\d{2}", text))

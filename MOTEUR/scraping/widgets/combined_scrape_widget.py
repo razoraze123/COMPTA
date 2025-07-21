@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
+import logging
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -17,10 +18,12 @@ from PySide6.QtWidgets import (
     QWidget,
     QTextEdit,
     QComboBox,
+    QMessageBox,
+    QApplication,
 )
 import csv
 
-from .scraping_widget import ScrapeWorker
+from .scraping_widget import ScrapeWorker, LogHandler
 from ..scraping_variantes import extract_variants_with_images
 from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
 from ..image_scraper.rename import clean_filename
@@ -73,9 +76,19 @@ class CombinedScrapeWidget(QWidget):
         self.progress.hide()
         layout.addWidget(self.progress)
 
+        self.log_handler = LogHandler()
+        self.log_handler.setFormatter(logging.Formatter("%(message)s"))
+        logging.getLogger().addHandler(self.log_handler)
+        logging.getLogger().setLevel(logging.INFO)
+
         self.console = QTextEdit()
         self.console.setReadOnly(True)
+        self.log_handler.log_signal.connect(self.console.append)
         layout.addWidget(self.console)
+
+        copy_btn = QPushButton("Copier")
+        copy_btn.clicked.connect(self.copy_console)
+        layout.addWidget(copy_btn)
 
         self.table = QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels([
@@ -159,6 +172,10 @@ class CombinedScrapeWidget(QWidget):
                     woo_item.text() if woo_item else "",
                 ])
 
+    def copy_console(self) -> None:
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self.console.toPlainText())
+
     @Slot()
     def start_process(self) -> None:
         profile_name = self.profile_combo.currentText()
@@ -224,6 +241,7 @@ class CombinedScrapeWidget(QWidget):
             self.console.append("✅ Terminé")
             self.progress.hide()
             self.start_btn.setEnabled(True)
+            QMessageBox.information(self, "Scraping", "Op\u00e9ration termin\u00e9e")
 
     # ------------------------------------------------------------------
     def select_folder(self) -> None:

@@ -1,23 +1,28 @@
 from __future__ import annotations
 
 import logging
+import random
 import time
 from functools import wraps
-from urllib.parse import urlparse
+from typing import Any, Callable, TypeVar
 
-import requests
+from selenium.webdriver import ActionChains
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 
 logger = logging.getLogger(__name__)
 
 
-def retry_on_stale(max_retry: int = 3, delay: float = 0.4):
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def retry_on_stale(max_retry: int = 3, delay: float = 0.4) -> Callable[[F], F]:
     """Retry function if a ``StaleElementReferenceException`` occurs."""
 
-    def decorator(func):
+    def decorator(func: F) -> F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any):
             attempts = 0
             while True:
                 try:
@@ -28,14 +33,14 @@ def retry_on_stale(max_retry: int = 3, delay: float = 0.4):
                         raise
                     time.sleep(delay)
 
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     return decorator
 
 
-def exhaust_carousel(carousel_root):
+def exhaust_carousel(carousel_root: WebElement) -> list[WebElement]:
     """Return all unique ``<img>`` elements within a carousel."""
-    imgs: dict[int, any] = {}
+    imgs: dict[int, WebElement] = {}
     imgs.update(
         {id(img): img for img in carousel_root.find_elements(By.CSS_SELECTOR, "img")}
     )
@@ -51,7 +56,10 @@ def exhaust_carousel(carousel_root):
         and next_btn.get_attribute("aria-disabled") != "true"
     ):
         next_btn.click()
-        time.sleep(0.2)
+        time.sleep(random.uniform(0.5, 1.5))
+        ActionChains(carousel_root.parent).move_by_offset(
+            random.randint(-20, 20), random.randint(-20, 20)
+        ).perform()
         for img in carousel_root.find_elements(By.CSS_SELECTOR, "img"):
             imgs.setdefault(id(img), img)
         if (
@@ -60,17 +68,3 @@ def exhaust_carousel(carousel_root):
         ):
             break
     return list(imgs.values())
-
-
-def check_robots(url: str) -> None:
-    """Download and display relevant ``Disallow`` lines from robots.txt."""
-    parsed = urlparse(url)
-    robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
-    try:
-        resp = requests.get(robots_url, timeout=5)
-        if resp.status_code == 200:
-            lines = [l for l in resp.text.splitlines() if "Disallow" in l]
-            if lines:
-                logger.info("Robots.txt:\n%s", "\n".join(lines))
-    except Exception:
-        pass

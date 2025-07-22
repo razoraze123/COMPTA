@@ -14,10 +14,10 @@ USE_ALT_JSON = True
 
 logger = logging.getLogger(__name__)
 
-_ALT_SENTENCES_CACHE: dict[Path, dict] = {}
+_ALT_SENTENCES_CACHE: dict[Path, dict[str, list[str]]] = {}
 
 
-def load_alt_sentences(path: Path = ALT_JSON_PATH) -> dict:
+def load_alt_sentences(path: Path = ALT_JSON_PATH) -> dict[str, list[str]]:
     """Load and cache ALT sentences from *path*."""
     path = Path(path)
     cached = _ALT_SENTENCES_CACHE.get(path)
@@ -44,7 +44,10 @@ def clean_filename(text: str) -> str:
 
 
 def rename_with_alt(
-    path: Path, sentences: dict, warned: set[str], reserved: set[Path]
+    path: Path,
+    sentences: dict[str, list[str]],
+    warned: set[str],
+    reserved: set[Path],
 ) -> Path:
     """Rename *path* using ALT sentences if available."""
     product_key = path.parent.name.replace("_", " ")

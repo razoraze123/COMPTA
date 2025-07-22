@@ -5,15 +5,18 @@ from __future__ import annotations
 
 import logging
 import os
+import random  # Pour le comportement humain
 import re
 import subprocess
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable, Optional
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from tqdm import tqdm
@@ -22,9 +25,9 @@ from . import download as dl_helpers
 from . import rename as rename_helpers
 from .constants import COMMON_SELECTORS
 from .constants import IMAGES_DEFAULT_SELECTOR as DEFAULT_CSS_SELECTOR
-from .constants import USER_AGENT
+from .constants import USER_AGENTS
 from .driver import setup_driver
-from .utils import check_robots, exhaust_carousel
+from .utils import exhaust_carousel
 from ..scraping_variantes import extract_variants_with_images
 
 logger = logging.getLogger(__name__)
@@ -51,7 +54,7 @@ def _open_folder(path: Path) -> None:
         logger.warning("Impossible d'ouvrir le dossier %s : %s", path, exc)
 
 
-def _find_product_name(driver) -> str:
+def _find_product_name(driver: WebDriver) -> str:
     """Return the product name found in the page."""
     selectors = [
         (By.CSS_SELECTOR, "meta[property='og:title']", "content"),
@@ -76,22 +79,21 @@ def download_images(
     css_selector: str = DEFAULT_CSS_SELECTOR,
     parent_dir: Path | str = "images",
     progress_callback: Optional[Callable[[int, int], None]] = None,
-    user_agent: str = USER_AGENT,
+    user_agent: str | None = None,
     use_alt_json: bool = rename_helpers.USE_ALT_JSON,
     *,
     alt_json_path: str | Path | None = None,
     max_threads: int = 4,
     carousel_selector: str | None = None,
-) -> dict:
+) -> dict[str, Path | None]:
     """Download all images from *url* and return folder and first image."""
     reserved_paths: set[Path] = set()
 
-    check_robots(url)
-
     driver = setup_driver(window_size=(1920, 1080), timeout=None)
+    ua = user_agent or random.choice(USER_AGENTS)
     driver.execute_cdp_cmd(
         "Network.setUserAgentOverride",
-        {"userAgent": user_agent},
+        {"userAgent": ua},
     )
 
     product_name = ""
@@ -110,6 +112,10 @@ def download_images(
     try:
         logger.info("\U0001f30d Chargement de la page...")
         driver.get(url)
+        time.sleep(random.uniform(1, 3))
+        scroll_amount = random.randint(200, 800)
+        driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+        time.sleep(random.uniform(0.5, 1.5))
         try:
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, css_selector))
@@ -128,7 +134,7 @@ def download_images(
                 filename = os.path.basename(img_url.split("?")[0])
                 path = dl_helpers.unique_path(folder, filename, reserved_paths)
                 try:
-                    dl_helpers.download_binary(img_url, path, user_agent)
+                    dl_helpers.download_binary(img_url, path, ua)
                     if use_alt_json:
                         path = rename_helpers.rename_with_alt(
                             path, sentences, warned_missing, reserved_paths
@@ -215,7 +221,7 @@ def download_images(
                             dl_helpers.download_binary,
                             url_to_download,
                             path,
-                            user_agent,
+                            ua,
                         )
                         futures[fut] = (idx, path)
                 except Exception as exc:

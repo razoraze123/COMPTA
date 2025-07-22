@@ -111,6 +111,12 @@ class CombinedScrapeWidget(QWidget):
         self.worker: ScrapeWorker | None = None
         self.domain: str = ""
         self.date: str = ""
+        self.rename_enabled: bool = True
+
+    # ------------------------------------------------------------------
+    def set_rename_enabled(self, enabled: bool) -> None:
+        """Enable or disable filename renaming."""
+        self.rename_enabled = enabled
 
     # ------------------------------------------------------------------
     def valid_date(self, text: str) -> bool:
@@ -196,6 +202,7 @@ class CombinedScrapeWidget(QWidget):
         self.domain = profile.domain if profile else "https://www.planetebob.fr"
         self.date = profile.date if profile else "2025/07"
         self.folder = self.folder_edit.text().strip() or "images"
+        self.rename_enabled = profile.rename if profile else True
 
         self.console.clear()
         self.console.append(f"Profil: {profile_name}")
@@ -211,7 +218,12 @@ class CombinedScrapeWidget(QWidget):
         url = self.pending_urls.pop(0)
         self.current_url = url
         self.console.append(url)
-        self.worker = ScrapeWorker(url, self.css, self.folder)
+        self.worker = ScrapeWorker(
+            url,
+            self.css,
+            self.folder,
+            use_alt_json=self.rename_enabled,
+        )
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.scrape_finished)
         self.worker.start()

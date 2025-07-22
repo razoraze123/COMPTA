@@ -26,6 +26,8 @@ class ScrapWidget(QWidget):
         self.woo_widget = WooImageURLWidget()
         self.compare_widget = VariantComparisonWidget()
         self.combined_widget = CombinedScrapeWidget()
+        self.rename_enabled = True
+        self.combined_widget.set_rename_enabled(self.rename_enabled)
 
         self.modules_order = [
             "Images",
@@ -67,3 +69,9 @@ class ScrapWidget(QWidget):
             self.tabs.insertTab(pos, widget, name)
         elif not enabled and current_index != -1:
             self.tabs.removeTab(current_index)
+
+    # ------------------------------------------------------------------
+    def set_rename(self, enabled: bool) -> None:
+        """Propagate rename setting to sub-widgets."""
+        self.rename_enabled = enabled
+        self.combined_widget.set_rename_enabled(enabled)

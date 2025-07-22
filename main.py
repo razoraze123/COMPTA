@@ -324,6 +324,9 @@ class MainWindow(QMainWindow):
         self.scraping_settings_page.module_toggled.connect(
             self.scrap_page.toggle_module
         )
+        self.scraping_settings_page.rename_toggled.connect(
+            self.scrap_page.set_rename
+        )
         self.stack.addWidget(self.scraping_settings_page)
 
         self.profile_page.profile_chosen.connect(

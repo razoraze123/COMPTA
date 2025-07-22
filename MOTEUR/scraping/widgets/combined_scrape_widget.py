@@ -90,11 +90,10 @@ class CombinedScrapeWidget(QWidget):
         copy_btn.clicked.connect(self.copy_console)
         layout.addWidget(copy_btn)
 
-        self.table = QTableWidget(0, 3)
+        self.table = QTableWidget(0, 2)
         self.table.setHorizontalHeaderLabels([
             "Variante",
             "Lien Woo",
-            "Lien Concurrent",
         ])
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -144,7 +143,7 @@ class CombinedScrapeWidget(QWidget):
         items = list(variants.items())
         self.table.setRowCount(0)
 
-        for name, comp in items:
+        for name, _ in items:
             woo = find_woo_link(name, remaining)
             if woo is None and remaining:
                 woo = remaining.pop(0)
@@ -152,14 +151,12 @@ class CombinedScrapeWidget(QWidget):
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(name))
             self.table.setItem(row, 1, QTableWidgetItem(woo or ""))
-            self.table.setItem(row, 2, QTableWidgetItem(comp))
 
         for woo in remaining:
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(""))
             self.table.setItem(row, 1, QTableWidgetItem(woo))
-            self.table.setItem(row, 2, QTableWidgetItem(""))
 
     def export_csv(self) -> None:
         path, _ = QFileDialog.getSaveFileName(

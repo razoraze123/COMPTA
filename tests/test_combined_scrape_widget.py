@@ -35,9 +35,6 @@ def test_populate_table_with_extra_images(tmp_path: Path):
     assert widget.table.item(0, 1).text().endswith("a.jpg")
     assert widget.table.item(1, 1).text().endswith("b.png")
     assert widget.table.item(2, 1).text().endswith("c.png")
-    assert widget.table.item(0, 2).text() == "http://img/red.jpg"
-    assert widget.table.item(1, 2).text() == "http://img/blue.jpg"
-    assert widget.table.item(2, 2).text() == ""
 
 
 def test_populate_table_more_variants_than_images(tmp_path: Path):
@@ -51,7 +48,6 @@ def test_populate_table_more_variants_than_images(tmp_path: Path):
 
     assert widget.table.rowCount() == 2
     assert widget.table.item(1, 1).text() == ""
-    assert widget.table.item(1, 2).text() == "http://img/blue.jpg"
 
 
 def test_populate_table_filename_match(tmp_path: Path):

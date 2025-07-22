@@ -124,35 +124,9 @@ def download_images(
                 EC.presence_of_element_located((By.CSS_SELECTOR, css_selector))
             )
         except TimeoutException:
-            logger.error("Timeout waiting for elements with selector %s", css_selector)
-            driver.quit()
-            try:
-                title, mapping = extract_variants_with_images(url)
-            except Exception as exc:
-                logger.error("Variant fallback failed: %s", exc)
-                return {"folder": folder, "first_image": first_image}
-
-            folder = _safe_folder(title, parent_dir)
-            for idx, img_url in enumerate(mapping.values(), start=1):
-                filename = os.path.basename(img_url.split("?")[0])
-                filename = re.sub(r"-\d+(?=\.\w+$)", "", filename)
-                path = dl_helpers.unique_path(folder, filename, reserved_paths)
-                try:
-                    dl_helpers.download_binary(img_url, path, ua)
-                    if use_alt_json:
-                        path = rename_helpers.rename_with_alt(
-                            path, sentences, warned_missing, reserved_paths
-                        )
-                    if first_image is None:
-                        first_image = path
-                    downloaded += 1
-                except Exception as exc:  # pragma: no cover - network issues
-                    logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
-                    skipped += 1
-            logger.info(
-                "\n\U0001f5bc %d images téléchargées via variante", downloaded
+            logger.warning(
+                "Timeout waiting for elements with selector %s", css_selector
             )
-            return {"folder": folder, "first_image": first_image}
 
         product_name = _find_product_name(driver)
         folder = _safe_folder(product_name, parent_dir)
@@ -181,6 +155,39 @@ def download_images(
             f"\n\U0001f5bc {len(img_elements)} images trouvées avec le "
             f"sélecteur : {css_selector}\n"
         )
+
+        if not img_elements:
+            logger.warning(
+                "No images found with selector %s, using variant fallback",
+                css_selector,
+            )
+            try:
+                title, mapping = extract_variants_with_images(url)
+            except Exception as exc:
+                logger.error("Variant fallback failed: %s", exc)
+                return {"folder": folder, "first_image": first_image}
+
+            folder = _safe_folder(title, parent_dir)
+            for idx, img_url in enumerate(mapping.values(), start=1):
+                filename = os.path.basename(img_url.split("?")[0])
+                filename = re.sub(r"-\d+(?=\.\w+$)", "", filename)
+                path = dl_helpers.unique_path(folder, filename, reserved_paths)
+                try:
+                    dl_helpers.download_binary(img_url, path, ua)
+                    if use_alt_json:
+                        path = rename_helpers.rename_with_alt(
+                            path, sentences, warned_missing, reserved_paths
+                        )
+                    if first_image is None:
+                        first_image = path
+                    downloaded += 1
+                except Exception as exc:  # pragma: no cover - network issues
+                    logger.error("\u274c Erreur pour l'image %s : %s", idx, exc)
+                    skipped += 1
+            logger.info(
+                "\n\U0001f5bc %d images téléchargées via variante", downloaded
+            )
+            return {"folder": folder, "first_image": first_image}
 
         total = len(img_elements)
         pbar = tqdm(range(total), desc="\U0001f53d Téléchargement des images")

@@ -93,6 +93,12 @@ def test_download_images_timeout_handled(monkeypatch, caplog) -> None:
         def quit(self):
             pass
 
+        def find_elements(self, *a, **k):
+            return []
+
+        def find_element(self, *a, **k):
+            raise Exception("not found")
+
     monkeypatch.setattr(
         image_scraper,
         "setup_driver",
@@ -107,8 +113,12 @@ def test_download_images_timeout_handled(monkeypatch, caplog) -> None:
             raise TimeoutException("boom")
 
     monkeypatch.setattr(image_scraper, "WebDriverWait", DummyWait)
+    monkeypatch.setattr(
+        image_scraper, "extract_variants_with_images", lambda u: ("p", {})
+    )
+    monkeypatch.setattr(image_scraper, "_safe_folder", lambda *a, **k: Path())
 
-    caplog.set_level(logging.ERROR)
+    caplog.set_level(logging.WARNING)
     result = image_scraper.download_images(
         "http://example.com", css_selector="img.css"
     )

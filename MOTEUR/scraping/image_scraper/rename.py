@@ -72,3 +72,17 @@ def rename_with_alt(
         logger.warning("Echec du renommage %s -> %s : %s", path, target, exc)
         return path
     return target
+
+
+def strip_trailing_digits(path: Path) -> Path:
+    """Remove trailing ``-digits`` before the extension of *path* if present."""
+    new_name = re.sub(r"-\d+(?=\.)", "", path.name)
+    if new_name == path.name:
+        return path
+    target = path.with_name(new_name)
+    try:
+        path.rename(target)
+    except OSError as exc:
+        logger.warning("Echec du renommage %s -> %s : %s", path, target, exc)
+        return path
+    return target

@@ -114,7 +114,10 @@ def download_images(
         driver.get(url)
         time.sleep(random.uniform(1, 3))
         scroll_amount = random.randint(200, 800)
-        driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+        try:
+            driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+        except Exception:
+            pass
         time.sleep(random.uniform(0.5, 1.5))
         try:
             WebDriverWait(driver, 10).until(

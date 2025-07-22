@@ -38,6 +38,7 @@ class Profile:
     domain: str = "https://www.planetebob.fr"
     date: str = "2025/07"
     url_file: str = ""
+    rename: bool = True
 
 
 class ProfileManager:
@@ -69,6 +70,7 @@ class ProfileManager:
                                 v.get("domain", "https://www.planetebob.fr"),
                                 v.get("date", "2025/07"),
                                 v.get("url_file", ""),
+                                v.get("rename", True),
                             )
                 else:
                     self.profiles = {}
@@ -88,6 +90,7 @@ class ProfileManager:
                         "domain": p.domain,
                         "date": p.date,
                         "url_file": p.url_file,
+                        "rename": p.rename,
                     }
                     for name, p in self.profiles.items()
                 },
@@ -104,10 +107,22 @@ class ProfileManager:
         return prof
 
     def add_or_update_profile(
-        self, name: str, css: str, domain: str, date: str, url_file: str = ""
+        self,
+        name: str,
+        css: str,
+        domain: str,
+        date: str,
+        url_file: str = "",
+        rename: bool = True,
     ) -> None:
         """Add or update *name* with profile parameters and persist it."""
-        self.profiles[name] = Profile(fix_css_selector(css), domain, date, url_file)
+        self.profiles[name] = Profile(
+            fix_css_selector(css),
+            domain,
+            date,
+            url_file,
+            rename,
+        )
         self.save_profiles()
 
     def remove_profile(self, name: str) -> None:

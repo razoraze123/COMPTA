@@ -41,6 +41,7 @@ def test_default_profile_creation(tmp_path: Path) -> None:
             "domain": "https://www.planetebob.fr",
             "date": "2025/07",
             "url_file": "",
+            "rename": True,
         }
     }
 

@@ -119,11 +119,11 @@ Le `CombinedScrapeWidget` lance en une seule étape :
 
 Une fois l'opération terminée, un tableau rassemble les informations suivantes :
 
-| Variante | Lien Woo | Lien Concurrent |
-|----------|----------|-----------------|
-| Red | https://shop.com/wp-content/uploads/2024/05/a.jpg | http://img/red.jpg |
-| Blue | https://shop.com/wp-content/uploads/2024/05/b.png | http://img/blue.jpg |
-|  | https://shop.com/wp-content/uploads/2024/05/c.png |  |
+| Variante | Lien Woo |
+|----------|----------|
+| Red | https://shop.com/wp-content/uploads/2024/05/a.jpg |
+| Blue | https://shop.com/wp-content/uploads/2024/05/b.png |
+|  | https://shop.com/wp-content/uploads/2024/05/c.png |
 
 Les liens WooCommerce sont appariés aux variantes en cherchant un mot clé
 dans le nom du fichier d'image. Par exemple, le fichier `camel.webp` sera

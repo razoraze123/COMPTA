@@ -135,6 +135,7 @@ def download_images(
             folder = _safe_folder(title, parent_dir)
             for idx, img_url in enumerate(mapping.values(), start=1):
                 filename = os.path.basename(img_url.split("?")[0])
+                filename = re.sub(r"-\d+(?=\.\w+$)", "", filename)
                 path = dl_helpers.unique_path(folder, filename, reserved_paths)
                 try:
                     dl_helpers.download_binary(img_url, path, ua)

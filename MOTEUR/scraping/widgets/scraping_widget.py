@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 
 from ..image_scraper.constants import IMAGES_DEFAULT_SELECTOR
 from ..image_scraper.scraper import download_images
+from ..image_scraper.rename import strip_trailing_digits
 from ..profiles.manager import ProfileManager
 
 
@@ -43,13 +44,20 @@ class ScrapeWorker(QThread):
     finished = Signal(dict)
 
     def __init__(
-        self, url: str, css: str, folder: str, *, use_alt_json: bool = True
+        self,
+        url: str,
+        css: str,
+        folder: str,
+        *,
+        use_alt_json: bool = True,
+        strip_digits: bool = False,
     ) -> None:
         super().__init__()
         self.url = url
         self.css = css or IMAGES_DEFAULT_SELECTOR
         self.folder = folder
         self.use_alt_json = use_alt_json
+        self.strip_digits = strip_digits
 
     def run(self) -> None:  # noqa: D401 - QThread API
         """Execute the scraping in a background thread."""
@@ -66,6 +74,13 @@ class ScrapeWorker(QThread):
                 "ChromeDriver not found: install it or specify chromedriver_path"
             )
             result = {"folder": Path(), "first_image": None}
+        if self.strip_digits:
+            folder = Path(result.get("folder", ""))
+            first = result.get("first_image")
+            for file in list(folder.iterdir()):
+                new_file = strip_trailing_digits(file)
+                if first == file:
+                    result["first_image"] = new_file
         self.finished.emit(result)
 
 

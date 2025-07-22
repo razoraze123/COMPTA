@@ -5,6 +5,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 
 from MOTEUR.scraping.image_scraper.constants import USER_AGENTS
 from MOTEUR.scraping.image_scraper.download import handle_image, unique_path
+from MOTEUR.scraping.image_scraper.rename import strip_trailing_digits
 from MOTEUR.scraping.image_scraper.utils import retry_on_stale
 
 
@@ -83,3 +84,12 @@ def test_retry_on_stale() -> None:
 
     assert call() == "ok"
     assert obj.calls == 2
+
+
+def test_strip_trailing_digits(tmp_path: Path) -> None:
+    file = tmp_path / "bob-tissu-eponge-blanc-451.jpg"
+    file.touch()
+    new_path = strip_trailing_digits(file)
+    assert new_path.name == "bob-tissu-eponge-blanc.jpg"
+    assert new_path.exists()
+    assert not file.exists()

@@ -5,8 +5,11 @@ import binascii
 import logging
 import mimetypes
 import os
+import random  # Ajout pour rotation d'UA
 import re
 from pathlib import Path
+
+from selenium.webdriver.remote.webelement import WebElement
 
 import requests
 
@@ -17,17 +20,31 @@ class ImageDownloadError(RuntimeError):
     pass
 
 
-from .constants import USER_AGENT
+# Choix aléatoire du User-Agent pour chaque téléchargement
+from .constants import USER_AGENTS
 from .utils import retry_on_stale
 
 logger = logging.getLogger(__name__)
 
 
-def download_binary(url: str, path: Path, user_agent: str = USER_AGENT) -> Path:
-    """Download binary content from *url* into *path* using *user_agent*."""
-    headers = {"User-Agent": user_agent}
+def download_binary(
+    url: str,
+    path: Path,
+    user_agent: str | None = None,
+    proxy: str | None = None,
+) -> Path:
+    """Télécharge l'URL dans ``path`` avec un User-Agent et éventuellement un proxy."""
+    ua = user_agent or random.choice(USER_AGENTS)
+    headers = {"User-Agent": ua}
+    proxies = {"http": proxy, "https": proxy} if proxy else None
     try:
-        with requests.get(url, headers=headers, stream=True, timeout=10) as resp:
+        with requests.get(
+            url,
+            headers=headers,
+            stream=True,
+            timeout=10,
+            proxies=proxies,
+        ) as resp:
             resp.raise_for_status()
             final_path = path
             if not path.suffix:
@@ -66,9 +83,13 @@ def unique_path(folder: Path, filename: str, reserved: set[Path]) -> Path:
 
 @retry_on_stale()
 def handle_image(
-    element, folder: Path, index: int, user_agent: str, reserved: set[Path]
+    element: WebElement,
+    folder: Path,
+    index: int,
+    user_agent: str,
+    reserved: set[Path],
 ) -> tuple[Path | None, str | None]:
-    """Return target path and optional URL for *element* image."""
+    """Retourne le chemin de l'image et son URL éventuelle."""
     src = (
         element.get_attribute("src")
         or element.get_attribute("data-src")
@@ -105,8 +126,8 @@ def handle_image(
 
     raw_filename = os.path.basename(src.split("?")[0])
     base, ext = os.path.splitext(raw_filename)
-    base = re.sub(r"-?\d+$", "", base)
-    base = re.sub(r"\d+", "", base)
+    # Ne supprimer que le "-<digits>" final
+    base = re.sub(r"-\d+$", "", base)
     filename = f"{base}{ext}"
     target = unique_path(folder, filename, reserved)
     return target, src

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from selenium.common.exceptions import StaleElementReferenceException
 
-from MOTEUR.scraping.image_scraper.constants import USER_AGENT
+from MOTEUR.scraping.image_scraper.constants import USER_AGENTS
 from MOTEUR.scraping.image_scraper.download import handle_image, unique_path
 from MOTEUR.scraping.image_scraper.utils import retry_on_stale
 
@@ -24,7 +24,7 @@ def test_handle_image_srcset(tmp_path: Path) -> None:
             "naturalHeight": "300",
         }
     )
-    path, url = handle_image(elem, tmp_path, 1, USER_AGENT, set())
+    path, url = handle_image(elem, tmp_path, 1, USER_AGENTS[0], set())
     assert url == "b.jpg"
     assert path.name.endswith("b.jpg")
 
@@ -46,7 +46,7 @@ def test_handle_image_strips_digits(tmp_path: Path) -> None:
             "naturalHeight": "300",
         }
     )
-    path, url = handle_image(elem, tmp_path, 1, USER_AGENT, set())
+    path, url = handle_image(elem, tmp_path, 1, USER_AGENTS[0], set())
     assert url == "https://example.com/bob-tissu-eponge-blanc-451.jpg"
     assert path.name == "bob-tissu-eponge-blanc.jpg"
 
@@ -59,7 +59,7 @@ def test_handle_image_no_ext(tmp_path: Path) -> None:
             "naturalHeight": "300",
         }
     )
-    path, url = handle_image(elem, tmp_path, 1, USER_AGENT, set())
+    path, url = handle_image(elem, tmp_path, 1, USER_AGENTS[0], set())
     assert url == "https://example.com/bob-tissu-eponge-blanc-451"
     assert path.name == "bob-tissu-eponge-blanc"
 

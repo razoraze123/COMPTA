@@ -215,11 +215,16 @@ class CombinedScrapeWidget(QWidget):
         url = self.pending_urls.pop(0)
         self.current_url = url
         self.console.append(url)
+        parts = self.css.split()
+        carousel = None
+        if parts and parts[-1].startswith("img"):
+            carousel = " ".join(parts[:-1]) or None
         self.worker = ScrapeWorker(
             url,
             self.css,
             self.folder,
             use_alt_json=self.rename_enabled,
+            carousel_selector=carousel,
         )
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.scrape_finished)

@@ -51,6 +51,7 @@ class ScrapeWorker(QThread):
         *,
         use_alt_json: bool = True,
         strip_digits: bool = False,
+        carousel_selector: str | None = None,
     ) -> None:
         super().__init__()
         self.url = url
@@ -58,16 +59,18 @@ class ScrapeWorker(QThread):
         self.folder = folder
         self.use_alt_json = use_alt_json
         self.strip_digits = strip_digits
+        self.carousel_selector = carousel_selector
 
     def run(self) -> None:  # noqa: D401 - QThread API
         """Execute the scraping in a background thread."""
         try:
-            result = download_images(
+                result = download_images(
                 self.url,
                 css_selector=self.css,
                 parent_dir=self.folder,
                 progress_callback=lambda c, t: self.progress.emit(c, t),
                 use_alt_json=self.use_alt_json,
+                carousel_selector=self.carousel_selector,
             )
         except FileNotFoundError as exc:  # chromedriver missing
             logging.getLogger(__name__).error(
@@ -235,7 +238,16 @@ class ScrapingImagesWidget(QWidget):
             return
         url = self.pending_urls.pop(0)
         self.console.append(url)
-        self.worker = ScrapeWorker(url, self.current_css, self.current_folder)
+        parts = self.current_css.split()
+        carousel = None
+        if parts and parts[-1].startswith("img"):
+            carousel = " ".join(parts[:-1]) or None
+        self.worker = ScrapeWorker(
+            url,
+            self.current_css,
+            self.current_folder,
+            carousel_selector=carousel,
+        )
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.scraping_finished)
         self.worker.start()

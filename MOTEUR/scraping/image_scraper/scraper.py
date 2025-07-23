@@ -123,8 +123,45 @@ def download_images(
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, css_selector))
             )
+            logger.debug("Selector %s detected", css_selector)
         except TimeoutException:
-            logger.error("Timeout waiting for elements with selector %s", css_selector)
+            logger.debug("Timeout waiting for selector %s", css_selector)
+
+        product_name = _find_product_name(driver)
+        folder = _safe_folder(product_name, parent_dir)
+
+        if carousel_selector:
+            try:
+                carousel_root = driver.find_element(By.CSS_SELECTOR, carousel_selector)
+                img_elements = exhaust_carousel(carousel_root)
+                logger.debug("%d images found in carousel", len(img_elements))
+            except Exception as exc:
+                logger.warning("Carousel not found %s: %s", carousel_selector, exc)
+                img_elements = []
+        else:
+            img_elements = []
+
+        selectors_to_try = [css_selector] + COMMON_SELECTORS
+        chosen_selector = css_selector
+        for sel in selectors_to_try:
+            if img_elements:
+                break
+            elems = driver.find_elements(By.CSS_SELECTOR, sel)
+            logger.debug("%d images with selector %s", len(elems), sel)
+            if elems:
+                img_elements = elems
+                chosen_selector = sel
+        css_selector = chosen_selector
+        logger.info(
+            f"\n\U0001f5bc {len(img_elements)} images trouvées avec le "
+            f"sélecteur : {css_selector}\n"
+        )
+
+        if not img_elements:
+            logger.warning(
+                "No images found with selector %s, using variant fallback",
+                css_selector,
+            )
             driver.quit()
             try:
                 title, mapping = extract_variants_with_images(url)
@@ -153,34 +190,6 @@ def download_images(
                 "\n\U0001f5bc %d images téléchargées via variante", downloaded
             )
             return {"folder": folder, "first_image": first_image}
-
-        product_name = _find_product_name(driver)
-        folder = _safe_folder(product_name, parent_dir)
-
-        if carousel_selector:
-            try:
-                carousel_root = driver.find_element(By.CSS_SELECTOR, carousel_selector)
-                img_elements = exhaust_carousel(carousel_root)
-            except Exception as exc:
-                logger.warning("Carousel not found %s: %s", carousel_selector, exc)
-                img_elements = []
-        else:
-            img_elements = []
-
-        selectors_to_try = [css_selector] + COMMON_SELECTORS
-        chosen_selector = css_selector
-        for sel in selectors_to_try:
-            if img_elements:
-                break
-            elems = driver.find_elements(By.CSS_SELECTOR, sel)
-            if elems:
-                img_elements = elems
-                chosen_selector = sel
-        css_selector = chosen_selector
-        logger.info(
-            f"\n\U0001f5bc {len(img_elements)} images trouvées avec le "
-            f"sélecteur : {css_selector}\n"
-        )
 
         total = len(img_elements)
         pbar = tqdm(range(total), desc="\U0001f53d Téléchargement des images")

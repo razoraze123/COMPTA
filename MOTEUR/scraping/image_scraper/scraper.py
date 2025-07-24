@@ -125,7 +125,10 @@ def download_images(
             )
             logger.debug("Selector %s detected", css_selector)
         except TimeoutException:
-            logger.debug("Timeout waiting for selector %s", css_selector)
+            logger.error(
+                "Timeout waiting for elements with selector %s", css_selector
+            )
+            return {"folder": folder, "first_image": first_image}
 
         product_name = _find_product_name(driver)
         folder = _safe_folder(product_name, parent_dir)
